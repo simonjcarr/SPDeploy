@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Run tests
+      run: ./build.sh test
+
+    - name: Build all platforms
+      env:
+        VERSION: ${{ steps.get_version.outputs.VERSION }}
+      run: ./build.sh all
+
+    - name: Create packages
+      env:
+        VERSION: ${{ steps.get_version.outputs.VERSION }}
+      run: ./build.sh package
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        body: |
+          ## GoCD ${{ github.ref_name }}
+
+          ### Installation
+
+          Download the appropriate binary for your platform below.
+
+          #### Linux/macOS
+          ```bash
+          tar -xzf gocd-*.tar.gz
+          chmod +x gocd
+          sudo mv gocd /usr/local/bin/
+          ```
+
+          #### Windows
+          Extract the ZIP file and add the directory to your PATH.
+
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/releases/*
+        token: ${{ secrets.GITHUB_TOKEN }}
