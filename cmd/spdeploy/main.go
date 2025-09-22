@@ -20,6 +20,12 @@ import (
 )
 
 var (
+	// Version information - set at build time via ldflags
+	AppName   = "SPDeploy"
+	Version   = "dev"
+	GitCommit = "unknown"
+	BuildDate = "unknown"
+
 	cfgFile string
 	logFlag bool
 	followFlag bool
@@ -31,6 +37,7 @@ var rootCmd = &cobra.Command{
 	Short: "Continuous deployment service for GitHub repositories",
 	Long: `SPDeploy is a lightweight continuous deployment service that automatically
 syncs your code from GitHub to your local directories when changes are detected.`,
+	Version: fmt.Sprintf("%s\nCommit: %s\nBuilt: %s", Version, GitCommit, BuildDate),
 	Run: func(cmd *cobra.Command, args []string) {
 		if serviceFlag {
 			runAsService()
@@ -507,6 +514,13 @@ var uninstallCmd = &cobra.Command{
 }
 
 func init() {
+	// Set custom version template
+	rootCmd.SetVersionTemplate(fmt.Sprintf(`%s {{.Version}}
+`, AppName))
+
+	// Add -v shorthand for --version
+	rootCmd.Flags().BoolP("version", "v", false, "version for spdeploy")
+
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is system config location)")
 	rootCmd.Flags().BoolVar(&logFlag, "log", false, "show logs")
 	rootCmd.Flags().BoolVarP(&followFlag, "follow", "f", false, "follow logs in real-time")

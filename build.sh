@@ -13,7 +13,12 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 APP_NAME="spdeploy"
-VERSION=${VERSION:-"1.0.0"}
+# Try to get version from VERSION file first, then fallback to default
+if [ -f "VERSION" ]; then
+    VERSION=$(cat VERSION | tr -d '\n' | sed 's/^v//')
+else
+    VERSION=${VERSION:-"1.0.0"}
+fi
 DIST_DIR="dist"
 
 # Helper functions
@@ -51,9 +56,13 @@ build_platform() {
 
     log_info "Building for ${os}/${arch}..."
 
+    # Get git commit and build date (use env vars if available, otherwise get from git)
+    GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")}
+    BUILD_DATE=${BUILD_DATE:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}
+
     # Build single binary
     CGO_ENABLED=0 GOOS=${os} GOARCH=${arch} go build \
-        -ldflags "-X main.Version=${VERSION} -s -w" \
+        -ldflags "-X main.Version=${VERSION} -X main.GitCommit=${GIT_COMMIT} -X main.BuildDate=${BUILD_DATE} -s -w" \
         -trimpath \
         -o ${platform_dir}/${APP_NAME}${ext} \
         ./cmd/spdeploy
@@ -74,8 +83,12 @@ build_local() {
         ext=".exe"
     fi
 
+    # Get git commit and build date (use env vars if available, otherwise get from git)
+    GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")}
+    BUILD_DATE=${BUILD_DATE:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}
+
     # Build single binary
-    go build -ldflags "-X main.Version=${VERSION} -s -w" -trimpath -o ${APP_NAME}${ext} ./cmd/spdeploy
+    go build -ldflags "-X main.Version=${VERSION} -X main.GitCommit=${GIT_COMMIT} -X main.BuildDate=${BUILD_DATE} -s -w" -trimpath -o ${APP_NAME}${ext} ./cmd/spdeploy
 
     log_success "Built ${APP_NAME} for ${os}/${arch}"
 }

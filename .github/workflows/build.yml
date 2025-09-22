@@ -13,14 +13,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Fetch all tags for version detection
+        fetch-depth: 0  # Fetch all tags and history for version detection
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
 
-    - name: Get version
+    - name: Get version and commit info
       id: version
       run: |
         # Read version from VERSION file
@@ -28,7 +28,18 @@ jobs:
         # Remove 'v' prefix if present
         VERSION=${VERSION#v}
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+        # Get git commit hash
+        GIT_COMMIT=$(git rev-parse --short HEAD)
+        echo "GIT_COMMIT=$GIT_COMMIT" >> $GITHUB_OUTPUT
+
+        # Get build date
+        BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_OUTPUT
+
         echo "Using version: $VERSION"
+        echo "Git commit: $GIT_COMMIT"
+        echo "Build date: $BUILD_DATE"
 
     - name: Run tests
       run: ./build.sh test
@@ -36,6 +47,8 @@ jobs:
     - name: Build all platforms
       run: |
         export VERSION=${{ steps.version.outputs.VERSION }}
+        export GIT_COMMIT=${{ steps.version.outputs.GIT_COMMIT }}
+        export BUILD_DATE=${{ steps.version.outputs.BUILD_DATE }}
         ./build.sh all
 
     - name: Organize binaries into versioned folders
