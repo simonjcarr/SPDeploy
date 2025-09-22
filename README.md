@@ -12,16 +12,22 @@ SPDeploy is a free, open-source continuous deployment service that automatically
 # 1. Install
 curl -sSL https://spdeploy.io/install.sh | sh
 
-# 2. Set your git token (choose your provider)
+# 2. Set up authentication for your repository
+# For HTTPS URLs - set token:
 export SPDEPLOY_GITHUB_TOKEN=ghp_xxxx      # For GitHub
 export SPDEPLOY_GITLAB_TOKEN=glpat_xxxx    # For GitLab
 export SPDEPLOY_BITBUCKET_TOKEN=xxxx       # For BitBucket
 
+# For SSH URLs - set up SSH keys:
+spdeploy repo auth git@github.com:user/app.git  # Shows SSH setup instructions
+
 # 3. Add repository to monitor
-spdeploy add https://github.com/user/app.git main /var/www/app
+spdeploy repo add --repo https://github.com/user/app.git --branch main --path /var/www/app
+# OR for SSH:
+spdeploy repo add --repo git@github.com:user/app.git --branch main --path /var/www/app
 
 # 4. Start auto-deployment
-sudo spdeploy start
+spdeploy start
 ```
 
 ### Windows
@@ -34,7 +40,7 @@ sudo spdeploy start
 $env:SPDEPLOY_GITHUB_TOKEN = "ghp_xxxx"
 
 # 4. Add repository
-spdeploy add https://github.com/user/app.git main C:\inetpub\app
+spdeploy repo add --repo https://github.com/user/app.git --branch main --path C:\inetpub\app
 
 # 5. Install and start service
 spdeploy install
@@ -49,10 +55,14 @@ spdeploy start
 # AMD64
 curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-amd64.tar.gz | tar -xz
 sudo mv spdeploy /usr/local/bin/
+# Install the service (do NOT use sudo)
+spdeploy install
 
 # ARM64 (Raspberry Pi, AWS Graviton)
 curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-arm64.tar.gz | tar -xz
 sudo mv spdeploy /usr/local/bin/
+# Install the service (do NOT use sudo)
+spdeploy install
 ```
 
 ### macOS
@@ -61,15 +71,37 @@ sudo mv spdeploy /usr/local/bin/
 # Intel Macs
 curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-darwin-amd64.tar.gz | tar -xz
 sudo mv spdeploy /usr/local/bin/
+# Install the service (do NOT use sudo)
+spdeploy install
 
 # Apple Silicon (M1/M2/M3)
 curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-darwin-arm64.tar.gz | tar -xz
 sudo mv spdeploy /usr/local/bin/
+# Install the service (do NOT use sudo)
+spdeploy install
 ```
 
 ### Windows
 
 Download from [releases page](https://github.com/simonjcarr/spdeploy/releases) and extract to `C:\Program Files\SPDeploy\`, then add to PATH.
+
+## ⚠️ Important: Sudo Usage
+
+**DO NOT use sudo with `spdeploy install` or `spdeploy start`!**
+
+- Run `spdeploy install` as a normal user - it will prompt for sudo when needed
+- Run `spdeploy start` as a normal user - the service runs under your user account
+- Running with sudo causes the service to be configured for root instead of your user
+
+```bash
+# CORRECT ✅
+spdeploy install  # Prompts for sudo when needed
+spdeploy start    # Runs as your user
+
+# WRONG ❌
+sudo spdeploy install  # Configures for root user
+sudo spdeploy start    # Runs as root
+```
 
 ## 🔑 Authentication Setup
 
@@ -128,7 +160,7 @@ spdeploy provider add github-corp github https://github.company.com
 export SPDEPLOY_GITHUB_CORP_TOKEN=ghp_xxxx
 
 # Add repository from self-hosted provider
-spdeploy add https://gitlab.company.com/team/api.git main /var/www/api
+spdeploy repo add --repo https://gitlab.company.com/team/api.git --branch main --path /var/www/api
 ```
 
 ### Auto-Detection
@@ -146,7 +178,7 @@ spdeploy provider detect https://git.company.com/project.git
 
 ```bash
 # Add repository to monitor
-spdeploy add <repo-url> <branch> <deploy-path>
+spdeploy repo add --repo <repo-url> --branch <branch> --path <deploy-path>
 
 # Start/stop service
 spdeploy start
@@ -154,9 +186,9 @@ spdeploy stop
 spdeploy status
 
 # View logs
-spdeploy logs              # Current repo
-spdeploy logs -f           # Follow mode
-spdeploy logs <repo-id>    # Specific repo
+spdeploy log               # All logs
+spdeploy log -f            # Follow mode
+spdeploy log --repo <url>  # Specific repo
 ```
 
 ### Provider Management
@@ -179,13 +211,13 @@ spdeploy provider remove <name>
 
 ```bash
 # List monitored repositories
-spdeploy list
+spdeploy repo list
 
 # Remove repository
-spdeploy remove <repo-url> <branch>
+spdeploy repo remove --repo <repo-url> --branch <branch>
 
 # Sync repository manually
-spdeploy sync <repo-id>
+spdeploy repo sync --id <repo-id>
 ```
 
 ## 💻 Examples by Use Case
@@ -197,8 +229,8 @@ spdeploy sync <repo-id>
 export SPDEPLOY_GITHUB_TOKEN=ghp_xxxx
 export SPDEPLOY_GITLAB_TOKEN=glpat_xxxx
 
-spdeploy add https://github.com/team/frontend.git develop ~/dev/frontend
-spdeploy add https://gitlab.com/team/backend.git develop ~/dev/backend
+spdeploy repo add --repo https://github.com/team/frontend.git --branch develop --path ~/dev/frontend
+spdeploy repo add --repo https://gitlab.com/team/backend.git --branch develop --path ~/dev/backend
 spdeploy start
 ```
 
@@ -206,7 +238,7 @@ spdeploy start
 
 ```bash
 # Deploy only on main branch updates
-spdeploy add https://github.com/company/app.git main /var/www/production
+spdeploy repo add --repo https://github.com/company/app.git --branch main --path /var/www/production
 
 # Add deployment script to your repo (spdeploy.sh)
 cat > spdeploy.sh << 'EOF'
@@ -226,9 +258,9 @@ spdeploy start
 export SPDEPLOY_GITLAB_TOKEN=glpat_xxxx
 export SPDEPLOY_BITBUCKET_TOKEN=xxxx
 
-spdeploy add https://github.com/open/project.git main ~/public
-spdeploy add https://gitlab.com/private/api.git main ~/api
-spdeploy add https://bitbucket.org/team/lib.git main ~/lib
+spdeploy repo add --repo https://github.com/open/project.git --branch main --path ~/public
+spdeploy repo add --repo https://gitlab.com/private/api.git --branch main --path ~/api
+spdeploy repo add --repo https://bitbucket.org/team/lib.git --branch main --path ~/lib
 spdeploy start
 ```
 
@@ -332,7 +364,7 @@ go build -o spdeploy cmd/spdeploy/*.go
 ```bash
 spdeploy status          # Check if already running
 spdeploy logs -f         # View error logs
-sudo spdeploy start      # May need sudo on some systems
+spdeploy start           # Start as normal user (do NOT use sudo)
 ```
 
 ### Authentication failed
@@ -350,13 +382,13 @@ env | grep SPDEPLOY
 ### Repository not updating
 ```bash
 # Check repo status
-spdeploy list
+spdeploy repo list
 
 # Manual sync
-spdeploy sync <repo-id>
+spdeploy repo sync --id <repo-id>
 
 # Check logs
-spdeploy logs <repo-id> -f
+spdeploy log --repo <repo-url> -f
 ```
 
 ## 🤝 Contributing

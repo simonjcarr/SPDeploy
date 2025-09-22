@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"spdeploy/internal/auth"
 	"spdeploy/internal/logger"
 	"spdeploy/internal/provider"
 	"spdeploy/internal/provider/github"
@@ -16,6 +17,7 @@ import (
 type GitManagerWithProvider struct {
 	registry      *provider.Registry
 	tokenResolver *provider.TokenResolver
+	tokenStore    *auth.TokenStore
 }
 
 // NewGitManagerWithProvider creates a new provider-aware git manager
@@ -31,6 +33,7 @@ func NewGitManagerWithProvider() *GitManagerWithProvider {
 	return &GitManagerWithProvider{
 		registry:      registry,
 		tokenResolver: provider.NewTokenResolver(registry),
+		tokenStore:    auth.NewTokenStore(),
 	}
 }
 
@@ -45,15 +48,24 @@ func (gm *GitManagerWithProvider) GetAuthenticatedURL(repoURL, repoID string) (s
 		return repoURL, nil
 	}
 
-	// Resolve token from environment
-	token, err := gm.tokenResolver.ResolveToken(repoURL, repoID)
-	if err != nil {
-		logger.Debug("No token found for repository",
-			zap.String("url", repoURL),
-			zap.String("provider", p.Name()),
-			zap.Error(err))
-		// Continue without token (might be public repo or using SSH)
-		return repoURL, nil
+	// Try to get token from token store first
+	var token string
+	storedToken, _ := gm.tokenStore.GetToken(p.Name())
+	if storedToken != "" {
+		token = storedToken
+		logger.Debug("Using token from token store",
+			zap.String("provider", p.Name()))
+	} else {
+		// Fall back to environment variables
+		token, err = gm.tokenResolver.ResolveToken(repoURL, repoID)
+		if err != nil {
+			logger.Debug("No token found for repository",
+				zap.String("url", repoURL),
+				zap.String("provider", p.Name()),
+				zap.Error(err))
+			// Continue without token (might be public repo or using SSH)
+			return repoURL, nil
+		}
 	}
 
 	// Get authenticated URL from provider

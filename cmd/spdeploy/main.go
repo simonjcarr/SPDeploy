@@ -335,7 +335,7 @@ Provide a repository URL to get specific instructions for SSH or HTTPS authentic
 		}
 
 		// Set environment variable for current session
-		os.Setenv("GITHUB_TOKEN", token)
+		os.Setenv("SPDEPLOY_GITHUB_TOKEN", token)
 	},
 }
 
@@ -567,6 +567,21 @@ func init() {
 }
 
 func installSPDeploy() error {
+	// Prevent running as root/sudo
+	if runtime.GOOS != "windows" && os.Geteuid() == 0 {
+		fmt.Println("❌ Do not run 'install' with sudo!")
+		fmt.Println()
+		fmt.Println("Please run as a normal user:")
+		fmt.Println("  ./spdeploy install")
+		fmt.Println()
+		fmt.Println("The installer will automatically prompt for sudo access when needed")
+		fmt.Println("to copy the binary to /usr/local/bin.")
+		fmt.Println()
+		fmt.Println("Running with sudo causes the service to be configured for the root")
+		fmt.Println("user instead of your user account.")
+		return fmt.Errorf("installation must be run as a normal user, not root")
+	}
+
 	// Get current executable path
 	executable, err := os.Executable()
 	if err != nil {
@@ -604,27 +619,32 @@ func installSPDeploy() error {
 	fmt.Println("🛑 Stopping any running SPDeploy service...")
 	daemon.Stop() // Ignore errors if not running
 
-	// Copy binary to system location (requires sudo)
-	fmt.Println("📦 Installing SPDeploy binary to system location...")
-	fmt.Printf("   This requires sudo access to copy to %s\n", target)
-
-	var copyErr error
-	if runtime.GOOS != "windows" {
-		// Use sudo to copy on Unix-like systems
-		cmd := exec.Command("sudo", "cp", executable, target)
-		copyErr = cmd.Run()
-		if copyErr == nil {
-			// Make executable
-			cmd = exec.Command("sudo", "chmod", "755", target)
-			copyErr = cmd.Run()
-		}
+	// Check if we're already installed at the target location
+	if executable == target {
+		fmt.Println("✅ SPDeploy is already installed at", target)
 	} else {
-		// Windows - try direct copy, may need admin rights
-		copyErr = copyFile(executable, target)
-	}
+		// Copy binary to system location (requires sudo)
+		fmt.Println("📦 Installing SPDeploy binary to system location...")
+		fmt.Printf("   This will prompt for sudo access to copy to %s\n", target)
 
-	if copyErr != nil {
-		return fmt.Errorf("failed to install binary (may need admin/sudo access): %w", copyErr)
+		var copyErr error
+		if runtime.GOOS != "windows" {
+			// Use sudo to copy on Unix-like systems
+			cmd := exec.Command("sudo", "cp", executable, target)
+			copyErr = cmd.Run()
+			if copyErr == nil {
+				// Make executable
+				cmd = exec.Command("sudo", "chmod", "755", target)
+				copyErr = cmd.Run()
+			}
+		} else {
+			// Windows - try direct copy, may need admin rights
+			copyErr = copyFile(executable, target)
+		}
+
+		if copyErr != nil {
+			return fmt.Errorf("failed to install binary (may need admin/sudo access): %w", copyErr)
+		}
 	}
 
 	// Create user directories (not system directories)
@@ -760,16 +780,37 @@ func runAsService() {
 	}
 
 	// Initialize the monitor
-	// Try to get token from environment first, then from stored token
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	if githubToken == "" {
-		authenticator := auth.NewPATAuthenticator()
-		storedToken, err := authenticator.GetStoredToken()
-		if err != nil {
-			logger.Warn("Failed to load stored GitHub token", zap.Error(err))
-		} else if storedToken != "" {
-			githubToken = storedToken
-			logger.Info("Using stored GitHub token")
+	// Try to get token from stored file first, then from environment
+	var githubToken string
+
+	// Use new token store
+	tokenStore := auth.NewTokenStore()
+
+	// Migrate from legacy format if needed
+	if err := tokenStore.MigrateFromLegacy(); err != nil {
+		logger.Warn("Failed to migrate legacy token", zap.Error(err))
+	}
+
+	// Get GitHub token from store
+	storedToken, err := tokenStore.GetToken("github")
+	if err == nil && storedToken != "" {
+		githubToken = storedToken
+		logger.Info("Using stored GitHub token")
+	} else {
+		// Fall back to environment variable if no stored token
+		githubToken = os.Getenv("SPDEPLOY_GITHUB_TOKEN")
+		if githubToken != "" {
+			logger.Info("Using GitHub token from environment")
+		} else {
+			// Also try legacy method as final fallback
+			authenticator := auth.NewPATAuthenticator()
+			legacyToken, _ := authenticator.GetStoredToken()
+			if legacyToken != "" {
+				githubToken = legacyToken
+				logger.Info("Using legacy stored token")
+			} else {
+				logger.Warn("No GitHub token found (checked token store, env var, and legacy storage)")
+			}
 		}
 	}
 	mon := monitor.NewMonitor(githubToken)
