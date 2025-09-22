@@ -557,6 +557,7 @@ func init() {
 
 	// Add commands to root
 	rootCmd.AddCommand(repoCmd)  // New repo command group
+	rootCmd.AddCommand(providerCmd)  // Provider management commands
 	rootCmd.AddCommand(logCmd)
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(stopCmd)

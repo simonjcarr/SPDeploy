@@ -1,521 +1,382 @@
-# SPDeploy - Effortless Continuous Deployment
+# SPDeploy - Universal Git Continuous Deployment with CI/CD Automation
 
-SPDeploy is a lightweight, cross-platform continuous deployment service that automatically syncs your code from GitHub to your development, staging, or production servers.
+SPDeploy is a free, open-source continuous deployment service that automatically syncs code from ANY git provider (GitHub, GitLab, BitBucket, etc.) to your servers and optionally executes custom deployment scripts for seamless CI/CD workflows. Built with simplicity in mind, SPDeploy bridges the gap between git push and production deployment.
 
-## 🚀 Quick Start
+**100% Open Source** • **MIT Licensed** • **No Vendor Lock-in** • **Self-Hosted** • **Single Binary** • **No complex Setup** • **Written in GO**
 
-### 1. Download and Install
+## 🚀 Quick Start (2 Minutes)
 
-#### Download Pre-built Binaries
+### Linux/macOS
 
-Download the latest release for your platform from the [releases page](https://github.com/simonjcarr/spdeploy/releases).
-
-**Linux (amd64)**
 ```bash
-curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-amd64.tar.gz | tar -xz
-chmod +x spdeploy
-sudo mv spdeploy /usr/local/bin/
+# 1. Install
+curl -sSL https://spdeploy.io/install.sh | sh
+
+# 2. Set your git token (choose your provider)
+export SPDEPLOY_GITHUB_TOKEN=ghp_xxxx      # For GitHub
+export SPDEPLOY_GITLAB_TOKEN=glpat_xxxx    # For GitLab
+export SPDEPLOY_BITBUCKET_TOKEN=xxxx       # For BitBucket
+
+# 3. Add repository to monitor
+spdeploy add https://github.com/user/app.git main /var/www/app
+
+# 4. Start auto-deployment
+sudo spdeploy start
 ```
 
-**Linux (arm64)**
-```bash
-curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-arm64.tar.gz | tar -xz
-chmod +x spdeploy
-sudo mv spdeploy /usr/local/bin/
-```
+### Windows
 
-**macOS (Intel)**
-```bash
-curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-darwin-amd64.tar.gz | tar -xz
-chmod +x spdeploy
-sudo mv spdeploy /usr/local/bin/
-```
-
-**macOS (Apple Silicon)**
-```bash
-curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-darwin-arm64.tar.gz | tar -xz
-chmod +x spdeploy
-sudo mv spdeploy /usr/local/bin/
-```
-
-**Windows**
 ```powershell
-# Download the Windows ZIP from releases page
-# Extract spdeploy.exe to a directory in your PATH
-# Or add the extracted directory to your PATH environment variable
-```
+# 1. Download from https://github.com/simonjcarr/spdeploy/releases
+# 2. Extract spdeploy.exe to C:\Program Files\SPDeploy\
 
-#### Install SPDeploy Service
+# 3. Set environment variable
+$env:SPDEPLOY_GITHUB_TOKEN = "ghp_xxxx"
 
-After downloading the binary:
+# 4. Add repository
+spdeploy add https://github.com/user/app.git main C:\inetpub\app
 
-```bash
-# Install SPDeploy as a user service
+# 5. Install and start service
 spdeploy install
-```
-
-This will:
-- Copy the binary to the appropriate system location
-- Set up a user-level service (systemd on Linux, LaunchAgent on macOS, Scheduled Task on Windows)
-- Create necessary configuration directories
-
-### 2. Set Up Repository Authentication
-
-#### For SSH URLs (Recommended)
-```bash
-# Get SSH key setup instructions
-spdeploy repo auth git@github.com:user/repo.git
-
-# Follow the platform-specific instructions to set up SSH keys
-```
-
-#### For HTTPS URLs
-```bash
-# Interactive token setup
-spdeploy repo auth https://github.com/user/repo.git
-
-# Or use existing GitHub token
-export GITHUB_TOKEN=your_personal_access_token
-```
-
-### 3. Add a Repository to Monitor
-
-```bash
-# Add a repository with required path
-spdeploy repo add --repo https://github.com/user/repo --path ~/deployments/myapp
-
-# Monitor a different branch
-spdeploy repo add --repo https://github.com/user/api --branch production --path /var/www/api
-
-# Monitor pull request merges only
-spdeploy repo add --repo https://github.com/user/webapp --branch main --path ~/sites/webapp --trigger pr
-
-# Monitor both pushes and PR merges
-spdeploy repo add --repo https://github.com/user/app --branch develop --path ~/dev/app --trigger both
-```
-
-### 4. Start Monitoring
-
-```bash
-# Start the SPDeploy daemon
 spdeploy start
+```
 
-# Check status
+## 📦 Installation
+
+### Linux
+
+```bash
+# AMD64
+curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-amd64.tar.gz | tar -xz
+sudo mv spdeploy /usr/local/bin/
+
+# ARM64 (Raspberry Pi, AWS Graviton)
+curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-arm64.tar.gz | tar -xz
+sudo mv spdeploy /usr/local/bin/
+```
+
+### macOS
+
+```bash
+# Intel Macs
+curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-darwin-amd64.tar.gz | tar -xz
+sudo mv spdeploy /usr/local/bin/
+
+# Apple Silicon (M1/M2/M3)
+curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-darwin-arm64.tar.gz | tar -xz
+sudo mv spdeploy /usr/local/bin/
+```
+
+### Windows
+
+Download from [releases page](https://github.com/simonjcarr/spdeploy/releases) and extract to `C:\Program Files\SPDeploy\`, then add to PATH.
+
+## 🔑 Authentication Setup
+
+### Environment Variables (Recommended)
+
+SPDeploy uses environment variables for secure token storage. Set the appropriate variable for your provider:
+
+```bash
+# GitHub
+export SPDEPLOY_GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+
+# GitLab
+export SPDEPLOY_GITLAB_TOKEN=glpat_xxxxxxxxxxxx
+
+# BitBucket
+export SPDEPLOY_BITBUCKET_TOKEN=xxxxxxxxxxxx
+
+# Self-hosted (after registering provider)
+export SPDEPLOY_GITLAB_COMPANY_TOKEN=glpat_xxxxxxxxxxxx
+```
+
+### Getting Tokens
+
+**GitHub:**
+1. Go to https://github.com/settings/tokens/new
+2. Select 'repo' scope
+3. Generate token
+
+**GitLab:**
+1. Go to https://gitlab.com/-/profile/personal_access_tokens
+2. Select 'read_repository' scope
+3. Create token
+
+**BitBucket:**
+1. Go to https://bitbucket.org/account/settings/app-passwords/
+2. Create app password with repository read access
+
+## 🌐 Provider Support
+
+### Built-in Providers
+
+SPDeploy automatically detects and supports:
+- GitHub (github.com)
+- GitLab (gitlab.com)
+- BitBucket (bitbucket.org)
+
+### Self-Hosted Git Servers
+
+```bash
+# Register self-hosted GitLab
+spdeploy provider add gitlab-company gitlab https://gitlab.company.com
+export SPDEPLOY_GITLAB_COMPANY_TOKEN=glpat_xxxx
+
+# Register GitHub Enterprise
+spdeploy provider add github-corp github https://github.company.com
+export SPDEPLOY_GITHUB_CORP_TOKEN=ghp_xxxx
+
+# Add repository from self-hosted provider
+spdeploy add https://gitlab.company.com/team/api.git main /var/www/api
+```
+
+### Auto-Detection
+
+SPDeploy automatically detects the git provider:
+
+```bash
+# Test detection
+spdeploy provider detect https://git.company.com/project.git
+```
+
+## 📋 Commands
+
+### Core Commands
+
+```bash
+# Add repository to monitor
+spdeploy add <repo-url> <branch> <deploy-path>
+
+# Start/stop service
+spdeploy start
+spdeploy stop
 spdeploy status
 
-# View real-time logs
-spdeploy log -f
+# View logs
+spdeploy logs              # Current repo
+spdeploy logs -f           # Follow mode
+spdeploy logs <repo-id>    # Specific repo
 ```
 
-## 📋 Complete Command Reference
+### Provider Management
+
+```bash
+# List all providers
+spdeploy provider list
+
+# Add self-hosted provider
+spdeploy provider add <name> <type> <url>
+
+# Test provider connectivity
+spdeploy provider test <name>
+
+# Remove provider
+spdeploy provider remove <name>
+```
 
 ### Repository Management
 
-#### `spdeploy repo add`
-Add a repository to monitor for automatic deployment.
-
-**Required Options:**
-- `--repo <url>` - GitHub repository URL
-- `--path <path>` - Local deployment path
-
-**Optional Options:**
-- `--branch <name>` - Branch to monitor (default: "main")
-- `--trigger <type>` - When to deploy: `push`, `pr`, or `both` (default: "push")
-- `--with-token` - Use stored GitHub token for this repository
-
-**Examples:**
 ```bash
-# Basic usage
-spdeploy repo add --repo https://github.com/user/app --path ~/deployments/app
+# List monitored repositories
+spdeploy list
 
-# Monitor production branch for PR merges
-spdeploy repo add --repo https://github.com/user/api --branch production --path /var/www/api --trigger pr
+# Remove repository
+spdeploy remove <repo-url> <branch>
 
-# Monitor both pushes and PRs on develop branch
-spdeploy repo add --repo https://github.com/user/webapp --branch develop --path ~/dev/webapp --trigger both
+# Sync repository manually
+spdeploy sync <repo-id>
 ```
 
-#### `spdeploy repo list`
-List all monitored repositories.
+## 💻 Examples by Use Case
+
+### Development Environment
 
 ```bash
-spdeploy repo list
-```
+# Monitor multiple repos from different providers
+export SPDEPLOY_GITHUB_TOKEN=ghp_xxxx
+export SPDEPLOY_GITLAB_TOKEN=glpat_xxxx
 
-Output shows:
-- Repository URL
-- Branch being monitored
-- Local deployment path
-- Trigger type (push/pr/both)
-
-#### `spdeploy repo remove`
-Remove a repository from monitoring.
-
-**Options:**
-- `--repo <url>` - Repository URL (required)
-- `--branch <name>` - Specific branch to remove (default: "main")
-- `--path <path>` - Remove specific path only
-- `--all` - Remove all instances of this repository
-
-**Examples:**
-```bash
-# Remove specific repository/branch
-spdeploy repo remove --repo https://github.com/user/app --branch main
-
-# Remove all instances of a repository
-spdeploy repo remove --repo https://github.com/user/app --all
-```
-
-#### `spdeploy repo auth`
-Set up authentication for repositories.
-
-**For SSH URLs:**
-```bash
-# Get SSH key setup instructions
-spdeploy repo auth git@github.com:user/repo.git
-```
-
-**For HTTPS URLs:**
-```bash
-# Interactive Personal Access Token setup
-spdeploy repo auth https://github.com/user/repo.git
-
-# Clear stored token
-spdeploy repo auth --logout
-```
-
-### Service Control
-
-#### `spdeploy start`
-Start the SPDeploy daemon service.
-
-```bash
+spdeploy add https://github.com/team/frontend.git develop ~/dev/frontend
+spdeploy add https://gitlab.com/team/backend.git develop ~/dev/backend
 spdeploy start
 ```
 
-#### `spdeploy stop`
-Stop the SPDeploy daemon service.
+### Production Server
 
 ```bash
-spdeploy stop
+# Deploy only on main branch updates
+spdeploy add https://github.com/company/app.git main /var/www/production
+
+# Add deployment script to your repo (spdeploy.sh)
+cat > spdeploy.sh << 'EOF'
+#!/bin/bash
+npm install --production
+npm run build
+pm2 restart app
+EOF
+
+spdeploy start
 ```
 
-#### `spdeploy status`
-Show daemon status and monitored repositories count.
+### Multi-Provider Setup
 
 ```bash
-spdeploy status
+# GitHub public + GitLab private + BitBucket
+export SPDEPLOY_GITLAB_TOKEN=glpat_xxxx
+export SPDEPLOY_BITBUCKET_TOKEN=xxxx
+
+spdeploy add https://github.com/open/project.git main ~/public
+spdeploy add https://gitlab.com/private/api.git main ~/api
+spdeploy add https://bitbucket.org/team/lib.git main ~/lib
+spdeploy start
 ```
 
-### Installation Management
+## 🔧 Deployment Scripts
 
-#### `spdeploy install`
-Install SPDeploy for the current user.
+SPDeploy runs `spdeploy.sh` (Linux/macOS) or `spdeploy.bat` (Windows) after pulling changes:
 
 ```bash
-spdeploy install
+#!/bin/bash
+# spdeploy.sh - Runs after each pull
+
+# Install dependencies
+npm ci --production
+
+# Build
+npm run build
+
+# Restart service
+systemctl --user restart myapp
+
+# Notify completion
+curl -X POST https://hooks.slack.com/services/xxx -d '{"text":"Deployed!"}'
 ```
 
-This command:
-- Installs the binary to system location
-- Creates user configuration directories
-- Sets up platform-specific user service:
-  - **Linux**: systemd user service
-  - **macOS**: LaunchAgent
-  - **Windows**: Scheduled Task
+## 🐳 Docker Support
 
-#### `spdeploy uninstall`
-Uninstall SPDeploy from the system.
-
-```bash
-spdeploy uninstall
-```
-
-Interactive prompts for:
-- Confirmation
-- Whether to remove configuration and logs
-
-### Log Management
-
-#### `spdeploy log`
-View deployment logs with various options.
-
-**Options:**
-- `-f, --follow` - Follow logs in real-time
-- `-g, --global` - Show global service logs
-- `--repo <url>` - Show logs for specific repository
-- `-a, --all` - List all monitored repositories
-- `--user <username>` - View logs for specific user (requires sudo)
-
-**Examples:**
-```bash
-# View logs for current repository (auto-detected)
-spdeploy log
-
-# Follow logs in real-time
-spdeploy log -f
-
-# View global service logs
-spdeploy log -g
-
-# View logs for specific repository
-spdeploy log --repo https://github.com/user/app
-
-# List all repositories being monitored
-spdeploy log -a
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  spdeploy:
+    image: spdeploy/spdeploy:latest
+    environment:
+      - SPDEPLOY_GITHUB_TOKEN=${GITHUB_TOKEN}
+      - SPDEPLOY_GITLAB_TOKEN=${GITLAB_TOKEN}
+    volumes:
+      - ./config.yaml:/etc/spdeploy/config.yaml
+      - /var/www:/var/www
 ```
 
 ## ⚙️ Configuration
 
-### Trigger Types
+### Config File Location
 
-- **push**: Deploy when commits are pushed to the branch
-- **pr**: Deploy when pull requests are merged to the branch
-- **both**: Deploy on both pushes and PR merges
-
-### Configuration File Locations
-
-- **Linux**: `~/.config/spdeploy/config.yaml` (user) or `/etc/spdeploy/config.yaml` (root)
-- **macOS**: `~/.config/spdeploy/config.yaml` (user) or `/etc/spdeploy/config.yaml` (root)
+- **Linux/macOS**: `~/.config/spdeploy/config.yaml` or `/etc/spdeploy/config.yaml`
 - **Windows**: `C:\ProgramData\SPDeploy\config.yaml`
 
-### Log File Locations
+### Example Config
 
-- **Global logs**: `~/.spdeploy/logs/global/<username>/YYYY-MM-DD.log`
-- **Repository logs**: `~/.spdeploy/logs/repos/<repo-name>/<username>/YYYY-MM-DD.log`
+```yaml
+repositories:
+  - id: webapp
+    url: https://github.com/team/webapp.git
+    branch: main
+    path: /var/www/webapp
+    provider: github      # Auto-detected if omitted
+    auth_method: pat      # pat or ssh
 
-## 🔧 Deployment Scripts
+  - id: api
+    url: https://gitlab.company.com/team/api.git
+    branch: production
+    path: /var/www/api
+    provider: gitlab
 
-SPDeploy automatically executes deployment scripts after pulling changes. Create one of these files in your repository root:
+providers:
+  - name: gitlab-company
+    type: gitlab
+    base_url: https://gitlab.company.com
+    api_url: https://gitlab.company.com/api/v4
 
-### Unix/Linux/macOS
-Create `spdeploy.sh` in your repository root:
-
-```bash
-#!/bin/bash
-# spdeploy.sh - Deployment script
-
-echo "Starting deployment..."
-
-# Install dependencies
-npm install
-
-# Build the application
-npm run build
-
-# Restart the service
-pm2 restart app
-
-echo "Deployment complete!"
+poll_interval: 60
+log_level: info
 ```
 
-### Windows
-Create `spdeploy.bat`, `spdeploy.cmd`, or `spdeploy.ps1` in your repository root:
+## 🔒 Security
 
-```batch
-@echo off
-REM spdeploy.bat - Deployment script
+- **Never commit tokens** - Use environment variables only
+- **Minimal token scopes** - Only grant necessary permissions
+- **Rotate tokens regularly** - Update tokens every 90 days
+- **Use SSH for production** - More secure than token auth
+- **Monitor logs** - Check `spdeploy logs` for unauthorized access
 
-echo Starting deployment...
+## 🛠️ Build from Source
 
-REM Install dependencies
-npm install
-
-REM Build the application
-npm run build
-
-REM Restart the service
-net stop myapp
-net start myapp
-
-echo Deployment complete!
-```
-
-### Environment Variables
-
-Your deployment scripts have access to these environment variables:
-
-- `SPDEPLOY_REPO_PATH` - Path to the repository
-- `SPDEPLOY_TIMESTAMP` - Deployment timestamp (RFC3339 format)
-- `SPDEPLOY_VERSION` - SPDeploy version
-- `SPDEPLOY_GIT_BRANCH` - Current Git branch
-- `SPDEPLOY_GIT_COMMIT` - Current Git commit hash
-- `SPDEPLOY_GIT_REMOTE` - Git remote URL
-
-### Script Execution
-
-- **Timeout**: 5 minutes (configurable)
-- **Working Directory**: Repository root
-- **Output**: Logged to repository-specific log files
-- **Exit Codes**: Tracked and logged
-
-## 🔒 Authentication
-
-### SSH Keys (Recommended for Private Repos)
-
-1. Generate an SSH key if you don't have one:
 ```bash
-ssh-keygen -t ed25519 -C "your_email@example.com"
-```
-
-2. Add the public key to GitHub:
-```bash
-cat ~/.ssh/id_ed25519.pub
-# Copy and add to GitHub Settings > SSH Keys
-```
-
-3. Use SSH URLs when adding repositories:
-```bash
-spdeploy repo add --repo git@github.com:user/repo.git --path ~/deploy/repo
-```
-
-### Personal Access Token (For HTTPS URLs)
-
-1. Create a token on GitHub:
-   - Go to Settings > Developer settings > Personal access tokens
-   - Create a token with `repo` scope
-
-2. Set up authentication:
-```bash
-# Interactive setup
-spdeploy repo auth https://github.com/user/repo.git
-
-# Or set environment variable
-export GITHUB_TOKEN=your_token_here
-```
-
-## 🛠️ Building from Source
-
-### Prerequisites
-- Go 1.21 or later
-- Git
-
-### Build
-```bash
-# Clone the repository
 git clone https://github.com/simonjcarr/spdeploy.git
 cd spdeploy
-
-# Build for all platforms (creates dist/ directory)
-./build.sh all
-
-# Build for current platform only
-./build.sh local
-
-# Create release packages
-./build.sh all && ./build.sh package
-
-# Run tests
-./build.sh test
+go build -o spdeploy cmd/spdeploy/*.go
 ```
 
-### Build Script Commands
-- `./build.sh all` - Build for all platforms
-- `./build.sh local` - Build for current platform
-- `./build.sh package` - Create release packages (tar.gz/zip)
-- `./build.sh test` - Run tests
-- `./build.sh clean` - Clean build directory
-- `./build.sh deps` - Install dependencies
-- `./build.sh fmt` - Format code
+## 📊 Performance
 
-## 📊 Example Workflows
-
-### Local Development Environment
-```bash
-# Monitor team repository for development
-spdeploy repo add --repo https://github.com/team/webapp --branch develop --path ~/dev/webapp --trigger both
-spdeploy start
-
-# View logs to monitor deployments
-spdeploy log -f
-```
-
-### Staging Server
-```bash
-# Deploy on PR merges to main
-spdeploy repo add --repo https://github.com/company/api --branch main --path /var/www/staging --trigger pr
-spdeploy start
-
-# Check deployment status
-spdeploy status
-spdeploy log --repo https://github.com/company/api -f
-```
-
-### Production Server
-```bash
-# Deploy only on pushes to production branch
-spdeploy repo add --repo https://github.com/company/app --branch production --path /var/www/production --trigger push
-spdeploy start
-
-# Monitor deployments
-spdeploy log -g -f  # Follow global logs
-```
+- **Lightweight**: < 15MB binary, < 20MB RAM usage
+- **Fast**: Polls every 60 seconds (configurable)
+- **Efficient**: Only pulls when changes detected
+- **Scalable**: Monitor unlimited repositories
 
 ## 🐛 Troubleshooting
 
-### Service Won't Start
+### Service won't start
 ```bash
-# Check if already running
-spdeploy status
-
-# View logs for errors
-spdeploy log -g
-
-# Stop and restart
-spdeploy stop
-spdeploy start
+spdeploy status          # Check if already running
+spdeploy logs -f         # View error logs
+sudo spdeploy start      # May need sudo on some systems
 ```
 
-### Repository Not Updating
+### Authentication failed
 ```bash
-# Check repository list and status
-spdeploy repo list
-spdeploy status
+# Test token
+spdeploy provider test github
 
-# View repository-specific logs
-spdeploy log --repo https://github.com/user/repo -f
+# Re-export token
+export SPDEPLOY_GITHUB_TOKEN=ghp_new_token
 
-# Check authentication
-spdeploy repo auth https://github.com/user/repo
+# Verify environment
+env | grep SPDEPLOY
 ```
 
-### Permission Errors
+### Repository not updating
 ```bash
-# Ensure deployment path is writable
-ls -la ~/deployment/path
+# Check repo status
+spdeploy list
 
-# Check deployment script is executable
-chmod +x spdeploy.sh
+# Manual sync
+spdeploy sync <repo-id>
 
-# View logs for detailed errors
-spdeploy log -f
-```
-
-### Authentication Issues
-```bash
-# For SSH issues
-ssh -T git@github.com  # Test SSH connection
-
-# For HTTPS token issues
-spdeploy repo auth --logout  # Clear token
-spdeploy repo auth https://github.com/user/repo  # Re-authenticate
+# Check logs
+spdeploy logs <repo-id> -f
 ```
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Built with [Cobra](https://github.com/spf13/cobra) for CLI
-- Uses [go-git](https://github.com/go-git/go-git) for Git operations
-- GitHub API integration via [go-github](https://github.com/google/go-github)
-- Structured logging with [Zap](https://go.uber.org/zap)
+Built with:
+- [Cobra](https://github.com/spf13/cobra) - CLI framework
+- [go-git](https://github.com/go-git/go-git) - Git operations
+- [Zap](https://go.uber.org/zap) - Logging
+
+## 📚 More Resources
+
+- [Provider Setup Guide](PROVIDER_GUIDE.md) - Detailed provider configuration
+- [API Documentation](https://docs.spdeploy.io) - REST API reference
+- [Examples](examples/) - Sample configurations and scripts
+- [Discussions](https://github.com/simonjcarr/spdeploy/discussions) - Community support

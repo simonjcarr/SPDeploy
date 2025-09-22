@@ -14,16 +14,17 @@ import (
 )
 
 type Monitor struct {
-	config        *config.ConfigManager
-	gitManager    *git.GitManager
-	githubClient  *github.GitHubClient
-	scriptExec    *ScriptExecutor
-	pollInterval  time.Duration
-	ctx           context.Context
-	cancel        context.CancelFunc
-	wg            sync.WaitGroup
-	repositories  map[string]*RepositoryWatcher
-	mu            sync.RWMutex
+	config          *config.ConfigManager
+	gitManager      *git.GitManager
+	providerManager *git.GitManagerWithProvider
+	githubClient    *github.GitHubClient
+	scriptExec      *ScriptExecutor
+	pollInterval    time.Duration
+	ctx             context.Context
+	cancel          context.CancelFunc
+	wg              sync.WaitGroup
+	repositories    map[string]*RepositoryWatcher
+	mu              sync.RWMutex
 }
 
 type RepositoryWatcher struct {
@@ -38,15 +39,19 @@ type RepositoryWatcher struct {
 func NewMonitor(githubToken string) *Monitor {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Create provider-aware git manager
+	providerManager := git.NewGitManagerWithProvider()
+
 	return &Monitor{
-		config:       config.NewConfig(),
-		gitManager:   git.NewGitManagerWithToken(githubToken),
-		githubClient: github.NewGitHubClient(githubToken),
-		scriptExec:   NewScriptExecutor(5 * time.Minute),
-		pollInterval: 60 * time.Second,
-		ctx:          ctx,
-		cancel:       cancel,
-		repositories: make(map[string]*RepositoryWatcher),
+		config:          config.NewConfig(),
+		gitManager:      git.NewGitManagerWithToken(githubToken), // Keep for backward compatibility
+		providerManager: providerManager,
+		githubClient:    github.NewGitHubClient(githubToken),
+		scriptExec:      NewScriptExecutor(5 * time.Minute),
+		pollInterval:    60 * time.Second,
+		ctx:             ctx,
+		cancel:          cancel,
+		repositories:    make(map[string]*RepositoryWatcher),
 	}
 }
 
@@ -87,13 +92,43 @@ func (m *Monitor) loadRepositories() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	// Load provider instances from config
+	configData, _ := m.config.Load()
+	if configData != nil && len(configData.Providers) > 0 {
+		var providerInstances []git.ProviderInstance
+		for _, p := range configData.Providers {
+			providerInstances = append(providerInstances, git.ProviderInstance{
+				Name:    p.Name,
+				Type:    p.Type,
+				BaseURL: p.BaseURL,
+				APIURL:  p.APIURL,
+			})
+		}
+		m.providerManager.LoadProviderInstances(providerInstances)
+	}
+
 	for _, repo := range repos {
 		if !repo.Active {
 			continue
 		}
 
-		// Create a GitManager for this repository with its specific token
-		repoGitManager := git.NewGitManagerWithToken(repo.Token)
+		// Get authenticated URL for this repository
+		authURL, err := m.providerManager.GetAuthenticatedURL(repo.URL, repo.ID)
+		if err != nil {
+			logger.Warn("Failed to get authenticated URL",
+				zap.String("repo", repo.URL),
+				zap.Error(err))
+			authURL = repo.URL // Fallback to original URL
+		}
+
+		// Create a GitManager for this repository
+		// If we have an authenticated URL with token, use it
+		repoGitManager := git.NewGitManager()
+		if authURL != repo.URL {
+			// Extract token from authenticated URL if present
+			// For now, just use the git manager as-is
+			repoGitManager = git.NewGitManager()
+		}
 
 		// Create a repository-specific logger
 		repoLogger, err := logger.NewRepoLogger(repo.URL, repo.Path)
@@ -112,8 +147,8 @@ func (m *Monitor) loadRepositories() error {
 			RepoLogger: repoLogger,
 		}
 
-		// Validate or setup the repository
-		err = repoGitManager.ValidateOrSetupRepo(repo.URL, repo.Branch, repo.Path)
+		// Validate or setup the repository using authenticated URL
+		err = repoGitManager.ValidateOrSetupRepo(authURL, repo.Branch, repo.Path)
 		if err != nil {
 			logger.Error("Failed to validate repository",
 				zap.String("repo", repo.URL),

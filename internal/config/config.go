@@ -12,22 +12,31 @@ import (
 )
 
 type Repository struct {
-	ID       string    `yaml:"id"`
-	URL      string    `yaml:"url"`
-	Branch   string    `yaml:"branch"`
-	Path     string    `yaml:"path"`
-	Trigger  string    `yaml:"trigger"`
-	LastSync time.Time `yaml:"last_sync"`
-	Active   bool      `yaml:"active"`
-	Token    string    `yaml:"token,omitempty"` // Per-repository token (encrypted in future)
+	ID         string    `yaml:"id"`
+	URL        string    `yaml:"url"`
+	Branch     string    `yaml:"branch"`
+	Path       string    `yaml:"path"`
+	Trigger    string    `yaml:"trigger"`
+	LastSync   time.Time `yaml:"last_sync"`
+	Active     bool      `yaml:"active"`
+	Provider   string    `yaml:"provider,omitempty"`   // Provider type (github, gitlab, etc.)
+	AuthMethod string    `yaml:"auth_method,omitempty"` // Auth method (pat, ssh, oauth)
 }
 
 type Config struct {
-	Repositories []Repository `yaml:"repositories"`
-	DaemonPID    int          `yaml:"daemon_pid,omitempty"`
-	LogLevel     string       `yaml:"log_level"`
-	PollInterval int          `yaml:"poll_interval"`
-	GitHubToken  string       `yaml:"github_token,omitempty"`
+	Repositories []Repository         `yaml:"repositories"`
+	DaemonPID    int                  `yaml:"daemon_pid,omitempty"`
+	LogLevel     string               `yaml:"log_level"`
+	PollInterval int                  `yaml:"poll_interval"`
+	Providers    []ProviderInstance   `yaml:"providers,omitempty"`
+}
+
+// ProviderInstance represents a configured git provider instance
+type ProviderInstance struct {
+	Name    string `yaml:"name"`    // Instance name (e.g., "gitlab-company")
+	Type    string `yaml:"type"`    // Provider type (github, gitlab, bitbucket, etc.)
+	BaseURL string `yaml:"base_url"` // Base URL for self-hosted instances
+	APIURL  string `yaml:"api_url,omitempty"` // API URL if different from base
 }
 
 type ConfigManager struct {
@@ -116,6 +125,10 @@ func (cm *ConfigManager) AddRepository(repoURL, branch, path, trigger string) er
 }
 
 func (cm *ConfigManager) AddRepositoryWithToken(repoURL, branch, path, trigger, token string) error {
+	return cm.AddRepositoryWithProvider(repoURL, branch, path, trigger, "", "")
+}
+
+func (cm *ConfigManager) AddRepositoryWithProvider(repoURL, branch, path, trigger, provider, authMethod string) error {
 	config, err := cm.Load()
 	if err != nil {
 		return err
@@ -168,13 +181,14 @@ func (cm *ConfigManager) AddRepositoryWithToken(repoURL, branch, path, trigger, 
 
 	// Add new repository
 	newRepo := Repository{
-		ID:      id,
-		URL:     repoURL,
-		Branch:  branch,
-		Path:    path,
-		Trigger: trigger,
-		Active:  true,
-		Token:   token,
+		ID:         id,
+		URL:        repoURL,
+		Branch:     branch,
+		Path:       path,
+		Trigger:    trigger,
+		Active:     true,
+		Provider:   provider,
+		AuthMethod: authMethod,
 	}
 
 	config.Repositories = append(config.Repositories, newRepo)
@@ -383,4 +397,65 @@ func (cm *ConfigManager) GetLogDirectory() string {
 		// Linux/Unix: /var/log/spdeploy
 		return "/var/log/spdeploy"
 	}
+}
+
+// AddProviderInstance adds or updates a provider instance configuration
+func (cm *ConfigManager) AddProviderInstance(instance ProviderInstance) error {
+	config, err := cm.Load()
+	if err != nil {
+		return err
+	}
+
+	// Check if instance already exists and update it
+	found := false
+	for i, p := range config.Providers {
+		if p.Name == instance.Name {
+			config.Providers[i] = instance
+			found = true
+			break
+		}
+	}
+
+	// Add new instance if not found
+	if !found {
+		config.Providers = append(config.Providers, instance)
+	}
+
+	return cm.Save(config)
+}
+
+// GetProviderInstances returns all configured provider instances
+func (cm *ConfigManager) GetProviderInstances() ([]ProviderInstance, error) {
+	config, err := cm.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	return config.Providers, nil
+}
+
+// RemoveProviderInstance removes a provider instance by name
+func (cm *ConfigManager) RemoveProviderInstance(name string) error {
+	config, err := cm.Load()
+	if err != nil {
+		return err
+	}
+
+	var updatedProviders []ProviderInstance
+	found := false
+
+	for _, p := range config.Providers {
+		if p.Name == name {
+			found = true
+			continue
+		}
+		updatedProviders = append(updatedProviders, p)
+	}
+
+	if !found {
+		return fmt.Errorf("provider instance not found: %s", name)
+	}
+
+	config.Providers = updatedProviders
+	return cm.Save(config)
 }
