@@ -70,7 +70,7 @@ func NewRepoLogger(repoURL, repoPath string) (*RepoLogger, error) {
 
 	// Create repository-specific log directory
 	sanitizedRepo := sanitizeRepoURL(repoURL)
-	logDir := filepath.Join(homeDir, ".gocd", "logs", "repos", sanitizedRepo, currentUser.Username)
+	logDir := filepath.Join(homeDir, ".spdeploy", "logs", "repos", sanitizedRepo, currentUser.Username)
 
 	// Ensure log directory exists with proper permissions
 	if err := os.MkdirAll(logDir, 0755); err != nil {

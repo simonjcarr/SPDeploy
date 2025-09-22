@@ -48,7 +48,7 @@ jobs:
         draft: false
         prerelease: false
         body: |
-          ## GoCD ${{ github.ref_name }}
+          ## SPDeploy ${{ github.ref_name }}
 
           ### Installation
 
@@ -56,9 +56,9 @@ jobs:
 
           #### Linux/macOS
           ```bash
-          tar -xzf gocd-*.tar.gz
-          chmod +x gocd
-          sudo mv gocd /usr/local/bin/
+          tar -xzf spdeploy-*.tar.gz
+          chmod +x spdeploy
+          sudo mv spdeploy /usr/local/bin/
           ```
 
           #### Windows

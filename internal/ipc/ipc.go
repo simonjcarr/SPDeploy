@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"gocd/internal/config"
+	"spdeploy/internal/config"
 )
 
 type Command struct {

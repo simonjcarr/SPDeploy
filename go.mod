@@ -1,4 +1,4 @@
-module gocd
+module spdeploy
 
 go 1.24.0
 

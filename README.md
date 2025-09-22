@@ -1,6 +1,6 @@
-# GoCD - Effortless Continuous Deployment
+# SPDeploy - Effortless Continuous Deployment
 
-GoCD is a lightweight, cross-platform continuous deployment service that automatically syncs your code from GitHub to your development, staging, or production servers.
+SPDeploy is a lightweight, cross-platform continuous deployment service that automatically syncs your code from GitHub to your development, staging, or production servers.
 
 ## 🚀 Quick Start
 
@@ -8,50 +8,50 @@ GoCD is a lightweight, cross-platform continuous deployment service that automat
 
 #### Download Pre-built Binaries
 
-Download the latest release for your platform from the [releases page](https://github.com/simonjcarr/gocd/releases).
+Download the latest release for your platform from the [releases page](https://github.com/simonjcarr/spdeploy/releases).
 
 **Linux (amd64)**
 ```bash
-curl -L https://github.com/simonjcarr/gocd/releases/latest/download/gocd-linux-amd64.tar.gz | tar -xz
-chmod +x gocd
-sudo mv gocd /usr/local/bin/
+curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-amd64.tar.gz | tar -xz
+chmod +x spdeploy
+sudo mv spdeploy /usr/local/bin/
 ```
 
 **Linux (arm64)**
 ```bash
-curl -L https://github.com/simonjcarr/gocd/releases/latest/download/gocd-linux-arm64.tar.gz | tar -xz
-chmod +x gocd
-sudo mv gocd /usr/local/bin/
+curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-arm64.tar.gz | tar -xz
+chmod +x spdeploy
+sudo mv spdeploy /usr/local/bin/
 ```
 
 **macOS (Intel)**
 ```bash
-curl -L https://github.com/simonjcarr/gocd/releases/latest/download/gocd-darwin-amd64.tar.gz | tar -xz
-chmod +x gocd
-sudo mv gocd /usr/local/bin/
+curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-darwin-amd64.tar.gz | tar -xz
+chmod +x spdeploy
+sudo mv spdeploy /usr/local/bin/
 ```
 
 **macOS (Apple Silicon)**
 ```bash
-curl -L https://github.com/simonjcarr/gocd/releases/latest/download/gocd-darwin-arm64.tar.gz | tar -xz
-chmod +x gocd
-sudo mv gocd /usr/local/bin/
+curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-darwin-arm64.tar.gz | tar -xz
+chmod +x spdeploy
+sudo mv spdeploy /usr/local/bin/
 ```
 
 **Windows**
 ```powershell
 # Download the Windows ZIP from releases page
-# Extract gocd.exe to a directory in your PATH
+# Extract spdeploy.exe to a directory in your PATH
 # Or add the extracted directory to your PATH environment variable
 ```
 
-#### Install GoCD Service
+#### Install SPDeploy Service
 
 After downloading the binary:
 
 ```bash
-# Install GoCD as a user service
-gocd install
+# Install SPDeploy as a user service
+spdeploy install
 ```
 
 This will:
@@ -64,7 +64,7 @@ This will:
 #### For SSH URLs (Recommended)
 ```bash
 # Get SSH key setup instructions
-gocd repo auth git@github.com:user/repo.git
+spdeploy repo auth git@github.com:user/repo.git
 
 # Follow the platform-specific instructions to set up SSH keys
 ```
@@ -72,7 +72,7 @@ gocd repo auth git@github.com:user/repo.git
 #### For HTTPS URLs
 ```bash
 # Interactive token setup
-gocd repo auth https://github.com/user/repo.git
+spdeploy repo auth https://github.com/user/repo.git
 
 # Or use existing GitHub token
 export GITHUB_TOKEN=your_personal_access_token
@@ -82,36 +82,36 @@ export GITHUB_TOKEN=your_personal_access_token
 
 ```bash
 # Add a repository with required path
-gocd repo add --repo https://github.com/user/repo --path ~/deployments/myapp
+spdeploy repo add --repo https://github.com/user/repo --path ~/deployments/myapp
 
 # Monitor a different branch
-gocd repo add --repo https://github.com/user/api --branch production --path /var/www/api
+spdeploy repo add --repo https://github.com/user/api --branch production --path /var/www/api
 
 # Monitor pull request merges only
-gocd repo add --repo https://github.com/user/webapp --branch main --path ~/sites/webapp --trigger pr
+spdeploy repo add --repo https://github.com/user/webapp --branch main --path ~/sites/webapp --trigger pr
 
 # Monitor both pushes and PR merges
-gocd repo add --repo https://github.com/user/app --branch develop --path ~/dev/app --trigger both
+spdeploy repo add --repo https://github.com/user/app --branch develop --path ~/dev/app --trigger both
 ```
 
 ### 4. Start Monitoring
 
 ```bash
-# Start the GoCD daemon
-gocd start
+# Start the SPDeploy daemon
+spdeploy start
 
 # Check status
-gocd status
+spdeploy status
 
 # View real-time logs
-gocd log -f
+spdeploy log -f
 ```
 
 ## 📋 Complete Command Reference
 
 ### Repository Management
 
-#### `gocd repo add`
+#### `spdeploy repo add`
 Add a repository to monitor for automatic deployment.
 
 **Required Options:**
@@ -126,20 +126,20 @@ Add a repository to monitor for automatic deployment.
 **Examples:**
 ```bash
 # Basic usage
-gocd repo add --repo https://github.com/user/app --path ~/deployments/app
+spdeploy repo add --repo https://github.com/user/app --path ~/deployments/app
 
 # Monitor production branch for PR merges
-gocd repo add --repo https://github.com/user/api --branch production --path /var/www/api --trigger pr
+spdeploy repo add --repo https://github.com/user/api --branch production --path /var/www/api --trigger pr
 
 # Monitor both pushes and PRs on develop branch
-gocd repo add --repo https://github.com/user/webapp --branch develop --path ~/dev/webapp --trigger both
+spdeploy repo add --repo https://github.com/user/webapp --branch develop --path ~/dev/webapp --trigger both
 ```
 
-#### `gocd repo list`
+#### `spdeploy repo list`
 List all monitored repositories.
 
 ```bash
-gocd repo list
+spdeploy repo list
 ```
 
 Output shows:
@@ -148,7 +148,7 @@ Output shows:
 - Local deployment path
 - Trigger type (push/pr/both)
 
-#### `gocd repo remove`
+#### `spdeploy repo remove`
 Remove a repository from monitoring.
 
 **Options:**
@@ -160,60 +160,60 @@ Remove a repository from monitoring.
 **Examples:**
 ```bash
 # Remove specific repository/branch
-gocd repo remove --repo https://github.com/user/app --branch main
+spdeploy repo remove --repo https://github.com/user/app --branch main
 
 # Remove all instances of a repository
-gocd repo remove --repo https://github.com/user/app --all
+spdeploy repo remove --repo https://github.com/user/app --all
 ```
 
-#### `gocd repo auth`
+#### `spdeploy repo auth`
 Set up authentication for repositories.
 
 **For SSH URLs:**
 ```bash
 # Get SSH key setup instructions
-gocd repo auth git@github.com:user/repo.git
+spdeploy repo auth git@github.com:user/repo.git
 ```
 
 **For HTTPS URLs:**
 ```bash
 # Interactive Personal Access Token setup
-gocd repo auth https://github.com/user/repo.git
+spdeploy repo auth https://github.com/user/repo.git
 
 # Clear stored token
-gocd repo auth --logout
+spdeploy repo auth --logout
 ```
 
 ### Service Control
 
-#### `gocd start`
-Start the GoCD daemon service.
+#### `spdeploy start`
+Start the SPDeploy daemon service.
 
 ```bash
-gocd start
+spdeploy start
 ```
 
-#### `gocd stop`
-Stop the GoCD daemon service.
+#### `spdeploy stop`
+Stop the SPDeploy daemon service.
 
 ```bash
-gocd stop
+spdeploy stop
 ```
 
-#### `gocd status`
+#### `spdeploy status`
 Show daemon status and monitored repositories count.
 
 ```bash
-gocd status
+spdeploy status
 ```
 
 ### Installation Management
 
-#### `gocd install`
-Install GoCD for the current user.
+#### `spdeploy install`
+Install SPDeploy for the current user.
 
 ```bash
-gocd install
+spdeploy install
 ```
 
 This command:
@@ -224,11 +224,11 @@ This command:
   - **macOS**: LaunchAgent
   - **Windows**: Scheduled Task
 
-#### `gocd uninstall`
-Uninstall GoCD from the system.
+#### `spdeploy uninstall`
+Uninstall SPDeploy from the system.
 
 ```bash
-gocd uninstall
+spdeploy uninstall
 ```
 
 Interactive prompts for:
@@ -237,7 +237,7 @@ Interactive prompts for:
 
 ### Log Management
 
-#### `gocd log`
+#### `spdeploy log`
 View deployment logs with various options.
 
 **Options:**
@@ -250,19 +250,19 @@ View deployment logs with various options.
 **Examples:**
 ```bash
 # View logs for current repository (auto-detected)
-gocd log
+spdeploy log
 
 # Follow logs in real-time
-gocd log -f
+spdeploy log -f
 
 # View global service logs
-gocd log -g
+spdeploy log -g
 
 # View logs for specific repository
-gocd log --repo https://github.com/user/app
+spdeploy log --repo https://github.com/user/app
 
 # List all repositories being monitored
-gocd log -a
+spdeploy log -a
 ```
 
 ## ⚙️ Configuration
@@ -275,25 +275,25 @@ gocd log -a
 
 ### Configuration File Locations
 
-- **Linux**: `~/.config/gocd/config.yaml` (user) or `/etc/gocd/config.yaml` (root)
-- **macOS**: `~/.config/gocd/config.yaml` (user) or `/etc/gocd/config.yaml` (root)
-- **Windows**: `C:\ProgramData\GoCD\config.yaml`
+- **Linux**: `~/.config/spdeploy/config.yaml` (user) or `/etc/spdeploy/config.yaml` (root)
+- **macOS**: `~/.config/spdeploy/config.yaml` (user) or `/etc/spdeploy/config.yaml` (root)
+- **Windows**: `C:\ProgramData\SPDeploy\config.yaml`
 
 ### Log File Locations
 
-- **Global logs**: `~/.gocd/logs/global/<username>/YYYY-MM-DD.log`
-- **Repository logs**: `~/.gocd/logs/repos/<repo-name>/<username>/YYYY-MM-DD.log`
+- **Global logs**: `~/.spdeploy/logs/global/<username>/YYYY-MM-DD.log`
+- **Repository logs**: `~/.spdeploy/logs/repos/<repo-name>/<username>/YYYY-MM-DD.log`
 
 ## 🔧 Deployment Scripts
 
-GoCD automatically executes deployment scripts after pulling changes. Create one of these files in your repository root:
+SPDeploy automatically executes deployment scripts after pulling changes. Create one of these files in your repository root:
 
 ### Unix/Linux/macOS
-Create `gocd.sh` in your repository root:
+Create `spdeploy.sh` in your repository root:
 
 ```bash
 #!/bin/bash
-# gocd.sh - Deployment script
+# spdeploy.sh - Deployment script
 
 echo "Starting deployment..."
 
@@ -310,11 +310,11 @@ echo "Deployment complete!"
 ```
 
 ### Windows
-Create `gocd.bat`, `gocd.cmd`, or `gocd.ps1` in your repository root:
+Create `spdeploy.bat`, `spdeploy.cmd`, or `spdeploy.ps1` in your repository root:
 
 ```batch
 @echo off
-REM gocd.bat - Deployment script
+REM spdeploy.bat - Deployment script
 
 echo Starting deployment...
 
@@ -335,12 +335,12 @@ echo Deployment complete!
 
 Your deployment scripts have access to these environment variables:
 
-- `GOCD_REPO_PATH` - Path to the repository
-- `GOCD_TIMESTAMP` - Deployment timestamp (RFC3339 format)
-- `GOCD_VERSION` - GoCD version
-- `GOCD_GIT_BRANCH` - Current Git branch
-- `GOCD_GIT_COMMIT` - Current Git commit hash
-- `GOCD_GIT_REMOTE` - Git remote URL
+- `SPDEPLOY_REPO_PATH` - Path to the repository
+- `SPDEPLOY_TIMESTAMP` - Deployment timestamp (RFC3339 format)
+- `SPDEPLOY_VERSION` - SPDeploy version
+- `SPDEPLOY_GIT_BRANCH` - Current Git branch
+- `SPDEPLOY_GIT_COMMIT` - Current Git commit hash
+- `SPDEPLOY_GIT_REMOTE` - Git remote URL
 
 ### Script Execution
 
@@ -366,7 +366,7 @@ cat ~/.ssh/id_ed25519.pub
 
 3. Use SSH URLs when adding repositories:
 ```bash
-gocd repo add --repo git@github.com:user/repo.git --path ~/deploy/repo
+spdeploy repo add --repo git@github.com:user/repo.git --path ~/deploy/repo
 ```
 
 ### Personal Access Token (For HTTPS URLs)
@@ -378,7 +378,7 @@ gocd repo add --repo git@github.com:user/repo.git --path ~/deploy/repo
 2. Set up authentication:
 ```bash
 # Interactive setup
-gocd repo auth https://github.com/user/repo.git
+spdeploy repo auth https://github.com/user/repo.git
 
 # Or set environment variable
 export GITHUB_TOKEN=your_token_here
@@ -393,8 +393,8 @@ export GITHUB_TOKEN=your_token_here
 ### Build
 ```bash
 # Clone the repository
-git clone https://github.com/simonjcarr/gocd.git
-cd gocd
+git clone https://github.com/simonjcarr/spdeploy.git
+cd spdeploy
 
 # Build for all platforms (creates dist/ directory)
 ./build.sh all
@@ -423,32 +423,32 @@ cd gocd
 ### Local Development Environment
 ```bash
 # Monitor team repository for development
-gocd repo add --repo https://github.com/team/webapp --branch develop --path ~/dev/webapp --trigger both
-gocd start
+spdeploy repo add --repo https://github.com/team/webapp --branch develop --path ~/dev/webapp --trigger both
+spdeploy start
 
 # View logs to monitor deployments
-gocd log -f
+spdeploy log -f
 ```
 
 ### Staging Server
 ```bash
 # Deploy on PR merges to main
-gocd repo add --repo https://github.com/company/api --branch main --path /var/www/staging --trigger pr
-gocd start
+spdeploy repo add --repo https://github.com/company/api --branch main --path /var/www/staging --trigger pr
+spdeploy start
 
 # Check deployment status
-gocd status
-gocd log --repo https://github.com/company/api -f
+spdeploy status
+spdeploy log --repo https://github.com/company/api -f
 ```
 
 ### Production Server
 ```bash
 # Deploy only on pushes to production branch
-gocd repo add --repo https://github.com/company/app --branch production --path /var/www/production --trigger push
-gocd start
+spdeploy repo add --repo https://github.com/company/app --branch production --path /var/www/production --trigger push
+spdeploy start
 
 # Monitor deployments
-gocd log -g -f  # Follow global logs
+spdeploy log -g -f  # Follow global logs
 ```
 
 ## 🐛 Troubleshooting
@@ -456,27 +456,27 @@ gocd log -g -f  # Follow global logs
 ### Service Won't Start
 ```bash
 # Check if already running
-gocd status
+spdeploy status
 
 # View logs for errors
-gocd log -g
+spdeploy log -g
 
 # Stop and restart
-gocd stop
-gocd start
+spdeploy stop
+spdeploy start
 ```
 
 ### Repository Not Updating
 ```bash
 # Check repository list and status
-gocd repo list
-gocd status
+spdeploy repo list
+spdeploy status
 
 # View repository-specific logs
-gocd log --repo https://github.com/user/repo -f
+spdeploy log --repo https://github.com/user/repo -f
 
 # Check authentication
-gocd repo auth https://github.com/user/repo
+spdeploy repo auth https://github.com/user/repo
 ```
 
 ### Permission Errors
@@ -485,10 +485,10 @@ gocd repo auth https://github.com/user/repo
 ls -la ~/deployment/path
 
 # Check deployment script is executable
-chmod +x gocd.sh
+chmod +x spdeploy.sh
 
 # View logs for detailed errors
-gocd log -f
+spdeploy log -f
 ```
 
 ### Authentication Issues
@@ -497,8 +497,8 @@ gocd log -f
 ssh -T git@github.com  # Test SSH connection
 
 # For HTTPS token issues
-gocd repo auth --logout  # Clear token
-gocd repo auth https://github.com/user/repo  # Re-authenticate
+spdeploy repo auth --logout  # Clear token
+spdeploy repo auth https://github.com/user/repo  # Re-authenticate
 ```
 
 ## 🤝 Contributing

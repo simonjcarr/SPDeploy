@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"gocd/internal/config"
-	"gocd/internal/git"
-	"gocd/internal/github"
-	"gocd/internal/logger"
+	"spdeploy/internal/config"
+	"spdeploy/internal/git"
+	"spdeploy/internal/github"
+	"spdeploy/internal/logger"
 )
 
 type Monitor struct {
@@ -51,7 +51,7 @@ func NewMonitor(githubToken string) *Monitor {
 }
 
 func (m *Monitor) Start() error {
-	logger.Info("Starting GoCD monitor service")
+	logger.Info("Starting spdeploy monitor service")
 
 	// Initialize logger
 	if err := logger.InitLogger(); err != nil {
@@ -67,15 +67,15 @@ func (m *Monitor) Start() error {
 	m.wg.Add(1)
 	go m.monitorLoop()
 
-	logger.Info("GoCD monitor service started successfully")
+	logger.Info("spdeploy monitor service started successfully")
 	return nil
 }
 
 func (m *Monitor) Stop() {
-	logger.Info("Stopping GoCD monitor service")
+	logger.Info("Stopping spdeploy monitor service")
 	m.cancel()
 	m.wg.Wait()
-	logger.Info("GoCD monitor service stopped")
+	logger.Info("spdeploy monitor service stopped")
 }
 
 func (m *Monitor) loadRepositories() error {

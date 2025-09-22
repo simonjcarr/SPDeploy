@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"gocd/internal/logger"
+	"spdeploy/internal/logger"
 )
 
 type ScriptExecutor struct {
@@ -41,9 +41,9 @@ func (se *ScriptExecutor) FindScript(repoPath string) (string, error) {
 
 	// Check for platform-specific scripts first, then fallback to generic
 	if runtime.GOOS == "windows" {
-		scriptNames = []string{"gocd.bat", "gocd.cmd", "gocd.ps1", "gocd.sh"}
+		scriptNames = []string{"spdeploy.bat", "spdeploy.cmd", "spdeploy.ps1", "spdeploy.sh"}
 	} else {
-		scriptNames = []string{"gocd.sh", "gocd"}
+		scriptNames = []string{"spdeploy.sh", "spdeploy"}
 	}
 
 	for _, scriptName := range scriptNames {
@@ -165,23 +165,23 @@ func (se *ScriptExecutor) ExecuteScript(scriptPath, repoPath string) *ScriptResu
 func (se *ScriptExecutor) prepareEnvironment(repoPath string) []string {
 	env := os.Environ()
 
-	// Add GoCD-specific environment variables
-	goCDEnv := []string{
-		"GOCD_REPO_PATH=" + repoPath,
-		"GOCD_TIMESTAMP=" + time.Now().Format(time.RFC3339),
-		"GOCD_VERSION=1.0.0",
+	// Add SPDeploy-specific environment variables
+	spdeployEnv := []string{
+		"SPDEPLOY_REPO_PATH=" + repoPath,
+		"SPDEPLOY_TIMESTAMP=" + time.Now().Format(time.RFC3339),
+		"SPDEPLOY_VERSION=1.0.0",
 	}
 
 	// Add Git information if available
 	if gitInfo := se.getGitInfo(repoPath); gitInfo != nil {
-		goCDEnv = append(goCDEnv,
-			"GOCD_GIT_BRANCH="+gitInfo.Branch,
-			"GOCD_GIT_COMMIT="+gitInfo.Commit,
-			"GOCD_GIT_REMOTE="+gitInfo.Remote,
+		spdeployEnv = append(spdeployEnv,
+			"SPDEPLOY_GIT_BRANCH="+gitInfo.Branch,
+			"SPDEPLOY_GIT_COMMIT="+gitInfo.Commit,
+			"SPDEPLOY_GIT_REMOTE="+gitInfo.Remote,
 		)
 	}
 
-	return append(env, goCDEnv...)
+	return append(env, spdeployEnv...)
 }
 
 type GitInfo struct {

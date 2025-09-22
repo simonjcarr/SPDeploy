@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# GoCD Build Script
+# SPDeploy Build Script
 # Cross-compiles for multiple platforms
 
 set -e
@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-APP_NAME="gocd"
+APP_NAME="spdeploy"
 VERSION=${VERSION:-"1.0.0"}
 DIST_DIR="dist"
 
@@ -56,7 +56,7 @@ build_platform() {
         -ldflags "-X main.Version=${VERSION} -s -w" \
         -trimpath \
         -o ${platform_dir}/${APP_NAME}${ext} \
-        ./cmd/gocd
+        ./cmd/spdeploy
 
     log_success "Built ${os}/${arch} → ${platform_dir}"
 }
@@ -75,7 +75,7 @@ build_local() {
     fi
 
     # Build single binary
-    go build -ldflags "-X main.Version=${VERSION} -s -w" -trimpath -o ${APP_NAME}${ext} ./cmd/gocd
+    go build -ldflags "-X main.Version=${VERSION} -s -w" -trimpath -o ${APP_NAME}${ext} ./cmd/spdeploy
 
     log_success "Built ${APP_NAME} for ${os}/${arch}"
 }
@@ -155,7 +155,7 @@ fmt() {
 
 # Show help
 show_help() {
-    echo "GoCD Build Script"
+    echo "SPDeploy Build Script"
     echo ""
     echo "Usage: $0 [command]"
     echo ""

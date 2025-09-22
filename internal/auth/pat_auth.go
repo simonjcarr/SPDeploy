@@ -14,7 +14,7 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/term"
-	"gocd/internal/logger"
+	"spdeploy/internal/logger"
 )
 
 type PATAuthenticator struct {
@@ -44,7 +44,7 @@ func (p *PATAuthenticator) AuthenticateInteractive() (string, error) {
 	fmt.Println()
 	fmt.Println("📋 Follow these steps:")
 	fmt.Println("1. Go to: https://github.com/settings/tokens/new")
-	fmt.Println("2. Give your token a descriptive name (e.g., 'gocd-deployment')")
+	fmt.Println("2. Give your token a descriptive name (e.g., 'spdeploy-deployment')")
 	fmt.Println("3. Select expiration (90 days recommended)")
 	fmt.Println("4. Select scopes:")
 	fmt.Println("   ✓ repo (Full control of private repositories)")
@@ -103,7 +103,7 @@ func (p *PATAuthenticator) AuthenticateInteractive() (string, error) {
 		fmt.Printf(" (%s)", user.Name)
 	}
 	fmt.Println()
-	fmt.Println("\n🎯 You can now add private repositories with 'gocd add'")
+	fmt.Println("\n🎯 You can now add private repositories with 'spdeploy add'")
 
 	return token, nil
 }
@@ -159,10 +159,10 @@ func (p *PATAuthenticator) GetStoredToken() (string, error) {
 		// Try to get the original user's home directory when using sudo
 		sudoUser := os.Getenv("SUDO_USER")
 		if sudoUser != "" {
-			userTokenFile := fmt.Sprintf("/Users/%s/.gocd/.github_token", sudoUser)
+			userTokenFile := fmt.Sprintf("/Users/%s/.spdeploy/.github_token", sudoUser)
 			// Also try /home for Linux systems
 			if _, err := os.Stat(userTokenFile); os.IsNotExist(err) {
-				userTokenFile = fmt.Sprintf("/home/%s/.gocd/.github_token", sudoUser)
+				userTokenFile = fmt.Sprintf("/home/%s/.spdeploy/.github_token", sudoUser)
 			}
 
 			data, err := os.ReadFile(userTokenFile)
