@@ -28,14 +28,14 @@ func InitLogger() error {
 		currentUser = &user.User{Username: "system"}
 	}
 
-	// Always use ~/.gocd/logs for consistency
+	// Always use ~/.spdeploy/logs for consistency
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
 	// Create global log directory for this user
-	logDir := filepath.Join(homeDir, ".gocd", "logs", "global", currentUser.Username)
+	logDir := filepath.Join(homeDir, ".spdeploy", "logs", "global", currentUser.Username)
 
 	// Ensure log directory exists
 	if err := os.MkdirAll(logDir, 0755); err != nil {

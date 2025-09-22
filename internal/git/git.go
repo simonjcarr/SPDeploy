@@ -9,7 +9,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"go.uber.org/zap"
-	"gocd/internal/logger"
+	"spdeploy/internal/logger"
 )
 
 type GitManager struct{
@@ -205,7 +205,7 @@ func (gm *GitManager) GetLatestCommitHash(localPath string) (string, error) {
 
 func (gm *GitManager) GetRemoteLatestCommitHash(repoURL, branch string) (string, error) {
 	// Create a temporary directory for fetching remote info
-	tempDir, err := os.MkdirTemp("", "gocd-remote-*")
+	tempDir, err := os.MkdirTemp("", "spdeploy-remote-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp directory: %w", err)
 	}

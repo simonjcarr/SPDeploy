@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"gocd/internal/logger"
+	"spdeploy/internal/logger"
 )
 
 const (
@@ -67,25 +67,25 @@ func NewGitHubAuthenticator() *GitHubAuthenticator {
 
 func getConfigDir() string {
 	if runtime.GOOS == "windows" {
-		return filepath.Join(os.Getenv("APPDATA"), "gocd")
+		return filepath.Join(os.Getenv("APPDATA"), "spdeploy")
 	}
 
 	// Check if running as root/sudo
 	if os.Geteuid() == 0 {
-		return "/etc/gocd"
+		return "/etc/spdeploy"
 	}
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return ".gocd"
+		return ".spdeploy"
 	}
-	return filepath.Join(home, ".gocd")
+	return filepath.Join(home, ".spdeploy")
 }
 
 func getClientID() string {
 	// For production, this would be registered with GitHub
 	// For now, we'll use device flow which doesn't require client secret
-	return "gocd-cli"
+	return "spdeploy-cli"
 }
 
 func getClientSecret() string {
@@ -107,7 +107,7 @@ func (g *GitHubAuthenticator) AuthenticateWithDeviceFlow() (string, error) {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Printf("1. Visit: %s\n", verificationURI)
 	fmt.Printf("2. Enter code: %s\n", userCode)
-	fmt.Println("3. Authorize 'gocd' to access your repositories")
+	fmt.Println("3. Authorize 'spdeploy' to access your repositories")
 	fmt.Println("\nWaiting for authorization...")
 
 	// Open browser automatically

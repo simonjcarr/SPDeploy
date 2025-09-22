@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"gocd/internal/config"
+	"spdeploy/internal/config"
 )
 
 // ShowContextualLogs shows logs based on the current directory and flags
@@ -44,12 +44,12 @@ func ShowContextualLogs(showGlobal bool, repoURL string, allRepos bool, username
 
 	if showGlobal {
 		// Show global service logs
-		logFile = filepath.Join(homeDir, ".gocd", "logs", "global", targetUser, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02")))
+		logFile = filepath.Join(homeDir, ".spdeploy", "logs", "global", targetUser, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02")))
 	} else if repoURL != "" {
 		// Show logs for specific repository
 		// Use the provided URL directly for consistency
 		sanitizedRepo := sanitizeRepoURL(repoURL)
-		logFile = filepath.Join(homeDir, ".gocd", "logs", "repos", sanitizedRepo, targetUser, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02")))
+		logFile = filepath.Join(homeDir, ".spdeploy", "logs", "repos", sanitizedRepo, targetUser, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02")))
 	} else if allRepos {
 		// List all repositories being monitored by the user
 		listUserRepos(homeDir, targetUser)
@@ -75,8 +75,8 @@ func ShowContextualLogs(showGlobal bool, repoURL string, allRepos bool, username
 		}
 
 		if !monitored {
-			fmt.Printf("This repository (%s) is not monitored by gocd\n", repoInfo.URL)
-			fmt.Println("Add it with: gocd add --repo " + repoInfo.URL + " --path .")
+			fmt.Printf("This repository (%s) is not monitored by spdeploy\n", repoInfo.URL)
+			fmt.Println("Add it with: spdeploy add --repo " + repoInfo.URL + " --path .")
 			return
 		}
 
@@ -89,7 +89,7 @@ func ShowContextualLogs(showGlobal bool, repoURL string, allRepos bool, username
 				break
 			}
 		}
-		logFile = filepath.Join(homeDir, ".gocd", "logs", "repos", sanitizedRepo, targetUser, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02")))
+		logFile = filepath.Join(homeDir, ".spdeploy", "logs", "repos", sanitizedRepo, targetUser, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02")))
 	}
 
 	// Check if log file exists
@@ -190,7 +190,7 @@ func normalizeRepoURL(url string) string {
 
 // listUserRepos lists all repositories being monitored by a user
 func listUserRepos(homeDir, username string) {
-	reposDir := filepath.Join(homeDir, ".gocd", "logs", "repos")
+	reposDir := filepath.Join(homeDir, ".spdeploy", "logs", "repos")
 
 	entries, err := os.ReadDir(reposDir)
 	if err != nil {

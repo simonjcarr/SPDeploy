@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-github/v50/github"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
-	"gocd/internal/logger"
+	"spdeploy/internal/logger"
 )
 
 type GitHubClient struct {

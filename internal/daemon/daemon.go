@@ -9,9 +9,9 @@ import (
 	"syscall"
 
 	"go.uber.org/zap"
-	"gocd/internal/config"
-	"gocd/internal/logger"
-	"gocd/internal/monitor"
+	"spdeploy/internal/config"
+	"spdeploy/internal/logger"
+	"spdeploy/internal/monitor"
 )
 
 type Daemon struct {
@@ -22,7 +22,7 @@ type Daemon struct {
 
 func NewDaemon() *Daemon {
 	cfg := config.NewConfig()
-	pidFile := filepath.Join(filepath.Dir(cfg.GetConfigPath()), "gocd.pid")
+	pidFile := filepath.Join(filepath.Dir(cfg.GetConfigPath()), "spdeploy.pid")
 
 	return &Daemon{
 		config:  cfg,

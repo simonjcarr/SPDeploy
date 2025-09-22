@@ -52,27 +52,27 @@ func NewConfig() *ConfigManager {
 func getConfigPath() string {
 	switch runtime.GOOS {
 	case "windows":
-		// Windows: C:\ProgramData\GoCD\config.yaml
+		// Windows: C:\ProgramData\SPDeploy\config.yaml
 		programData := os.Getenv("PROGRAMDATA")
 		if programData == "" {
 			programData = "C:\\ProgramData"
 		}
-		return filepath.Join(programData, "GoCD", "config.yaml")
+		return filepath.Join(programData, "SPDeploy", "config.yaml")
 
 	case "darwin":
-		// macOS: /etc/gocd/config.yaml (or ~/.config/gocd/config.yaml for non-root)
+		// macOS: /etc/spdeploy/config.yaml (or ~/.config/spdeploy/config.yaml for non-root)
 		if os.Geteuid() == 0 {
-			return "/etc/gocd/config.yaml"
+			return "/etc/spdeploy/config.yaml"
 		}
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			homeDir = os.Getenv("HOME")
 		}
-		return filepath.Join(homeDir, ".config", "gocd", "config.yaml")
+		return filepath.Join(homeDir, ".config", "spdeploy", "config.yaml")
 
 	default:
-		// Linux/Unix: /etc/gocd/config.yaml
-		return "/etc/gocd/config.yaml"
+		// Linux/Unix: /etc/spdeploy/config.yaml
+		return "/etc/spdeploy/config.yaml"
 	}
 }
 
@@ -361,26 +361,26 @@ func (cm *ConfigManager) GetConfigPath() string {
 func (cm *ConfigManager) GetLogDirectory() string {
 	switch runtime.GOOS {
 	case "windows":
-		// Windows: C:\ProgramData\GoCD\logs
+		// Windows: C:\ProgramData\SPDeploy\logs
 		programData := os.Getenv("PROGRAMDATA")
 		if programData == "" {
 			programData = "C:\\ProgramData"
 		}
-		return filepath.Join(programData, "GoCD", "logs")
+		return filepath.Join(programData, "SPDeploy", "logs")
 
 	case "darwin":
-		// macOS: /var/log/gocd (or ~/.local/share/gocd/logs for non-root)
+		// macOS: /var/log/spdeploy (or ~/.local/share/spdeploy/logs for non-root)
 		if os.Geteuid() == 0 {
-			return "/var/log/gocd"
+			return "/var/log/spdeploy"
 		}
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			homeDir = os.Getenv("HOME")
 		}
-		return filepath.Join(homeDir, ".local", "share", "gocd", "logs")
+		return filepath.Join(homeDir, ".local", "share", "spdeploy", "logs")
 
 	default:
-		// Linux/Unix: /var/log/gocd
-		return "/var/log/gocd"
+		// Linux/Unix: /var/log/spdeploy
+		return "/var/log/spdeploy"
 	}
 }
