@@ -12,24 +12,55 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all tags for version detection
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
 
+    - name: Get version
+      id: version
+      run: |
+        # Read version from VERSION file
+        VERSION=$(cat VERSION)
+        # Remove 'v' prefix if present
+        VERSION=${VERSION#v}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Using version: $VERSION"
+
     - name: Run tests
       run: ./build.sh test
 
     - name: Build all platforms
-      run: ./build.sh all
+      run: |
+        export VERSION=${{ steps.version.outputs.VERSION }}
+        ./build.sh all
 
-    - name: Create packages
-      run: ./build.sh package
+    - name: Organize binaries into versioned folders
+      run: |
+        VERSION=${{ steps.version.outputs.VERSION }}
+
+        # Create versioned folders and move binaries
+        for platform_dir in dist/*/; do
+          if [ -d "$platform_dir" ] && [ "$(basename "$platform_dir")" != "releases" ]; then
+            platform=$(basename "$platform_dir")
+            versioned_dir="dist/${platform}-v${VERSION}"
+
+            # Rename the directory to include version
+            mv "$platform_dir" "$versioned_dir"
+            echo "Moved $platform_dir to $versioned_dir"
+          fi
+        done
+
+        # List the final structure
+        echo "Final directory structure:"
+        ls -la dist/
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: binaries
-        path: dist/releases/*
+        name: spdeploy-v${{ steps.version.outputs.VERSION }}-binaries
+        path: dist/*-v${{ steps.version.outputs.VERSION }}/
         retention-days: 7
