@@ -280,7 +280,7 @@ func showSSHInstructions() {
 		fmt.Println("   cat ~/.ssh/id_ed25519.pub")
 		fmt.Println("   # Then copy the output")
 	} else {
-		fmt.Println("   type %USERPROFILE%\\.ssh\\id_ed25519.pub")
+		fmt.Println("   type %%USERPROFILE%%\\.ssh\\id_ed25519.pub")
 		fmt.Println("   # Then copy the output")
 	}
 	fmt.Println()
