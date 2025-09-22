@@ -97,9 +97,16 @@ When changes are detected, the repository will be automatically synced to the sp
 			token, _ = patAuth.GetStoredToken()
 		}
 
-		if err := cfg.AddRepository(repoURL, branch, absPath, trigger, token); err != nil {
-			fmt.Printf("Error adding repository: %v\n", err)
-			return
+		if token != "" {
+			if err := cfg.AddRepositoryWithToken(repoURL, branch, absPath, trigger, token); err != nil {
+				fmt.Printf("Error adding repository: %v\n", err)
+				return
+			}
+		} else {
+			if err := cfg.AddRepository(repoURL, branch, absPath, trigger); err != nil {
+				fmt.Printf("Error adding repository: %v\n", err)
+				return
+			}
 		}
 
 		fmt.Printf("✅ Repository added successfully!\n")
@@ -167,13 +174,20 @@ var removeRepoCmd = &cobra.Command{
 		cfg := config.NewConfig()
 
 		if all {
-			if err := cfg.RemoveAllRepositories(repoURL); err != nil {
+			count, err := cfg.RemoveAllRepository(repoURL, branch)
+			if err != nil {
 				fmt.Printf("Error removing repositories: %v\n", err)
 				return
 			}
-			fmt.Printf("✅ All instances of %s removed\n", repoURL)
+			fmt.Printf("✅ Removed %d instances of %s\n", count, repoURL)
 		} else {
-			if err := cfg.RemoveRepository(repoURL, branch, path); err != nil {
+			var err error
+			if path != "" {
+				err = cfg.RemoveRepositoryByPath(repoURL, branch, path)
+			} else {
+				err = cfg.RemoveRepository(repoURL, branch)
+			}
+			if err != nil {
 				fmt.Printf("Error removing repository: %v\n", err)
 				return
 			}
@@ -212,14 +226,9 @@ For HTTPS URLs, helps set up a Personal Access Token.`,
 		if repoURL == "" {
 			// No URL provided, do interactive PAT setup
 			patAuth := auth.NewPATAuthenticator()
-			token, err := patAuth.AuthenticateInteractive()
+			_, err := patAuth.AuthenticateInteractive()
 			if err != nil {
 				fmt.Printf("Error during authentication: %v\n", err)
-				return
-			}
-
-			if err := patAuth.SaveToken(token); err != nil {
-				fmt.Printf("Error saving token: %v\n", err)
 				return
 			}
 			return
@@ -231,14 +240,9 @@ For HTTPS URLs, helps set up a Personal Access Token.`,
 		} else {
 			// HTTPS URL - set up PAT
 			patAuth := auth.NewPATAuthenticator()
-			token, err := patAuth.AuthenticateInteractive()
+			_, err := patAuth.AuthenticateInteractive()
 			if err != nil {
 				fmt.Printf("Error during authentication: %v\n", err)
-				return
-			}
-
-			if err := patAuth.SaveToken(token); err != nil {
-				fmt.Printf("Error saving token: %v\n", err)
 				return
 			}
 		}
@@ -662,9 +666,12 @@ func runAsService() {
 
 	logger.Info("Starting SPDeploy service")
 
+	// Get the GitHub token
+	patAuth := auth.NewPATAuthenticator()
+	githubToken, _ := patAuth.GetStoredToken()
+
 	// Create monitor
-	cfg := config.NewConfig()
-	m := monitor.NewMonitor(cfg)
+	m := monitor.NewMonitor(githubToken)
 
 	// Set up signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
