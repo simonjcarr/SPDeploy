@@ -10,6 +10,7 @@ import (
 	"spdeploy/internal/provider"
 	"spdeploy/internal/provider/github"
 	"spdeploy/internal/provider/gitlab"
+	"spdeploy/internal/provider/bitbucket"
 	"spdeploy/internal/provider/generic"
 )
 
@@ -27,6 +28,7 @@ func NewGitManagerWithProvider() *GitManagerWithProvider {
 	// Register built-in providers
 	registry.Register(github.NewGitHubProvider())
 	registry.Register(gitlab.NewGitLabProvider())
+	registry.Register(bitbucket.NewBitbucketProvider())
 
 	// TODO: Load configured instances from config
 

@@ -1,0 +1,17 @@
+# Systemd service file for SPDeploy
+# Place in ~/.config/systemd/user/spdeploy.service
+
+[Unit]
+Description=SPDeploy SSH-based Git Repository Monitor
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/spdeploy run
+Restart=always
+RestartSec=10
+Environment="HOME=%h"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+[Install]
+WantedBy=default.target

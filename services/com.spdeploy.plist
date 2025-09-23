@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- LaunchAgent plist for SPDeploy -->
+<!-- Place in ~/Library/LaunchAgents/com.spdeploy.plist -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.spdeploy</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/spdeploy</string>
+        <string>run</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/spdeploy.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/spdeploy.error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>
