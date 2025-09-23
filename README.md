@@ -7,8 +7,9 @@
 ## Quick Start (Under 2 Minutes)
 
 ```bash
-# 1. Download and install
-curl -sSL https://spdeploy.io/install.sh | sh
+# 1. Download from GitHub releases page
+# Visit: https://github.com/simonjcarr/spdeploy/releases/latest
+# Download the binary for your platform and extract
 
 # 2. Add your repository
 spdeploy add git@github.com:username/myapp.git /var/www/myapp
@@ -33,15 +34,18 @@ That's it! SPDeploy now watches your repository and auto-deploys on every push.
 
 ## Installation
 
+Download the appropriate binary for your platform from the [GitHub releases page](https://github.com/simonjcarr/spdeploy/releases/latest).
+
 ### Linux/macOS
 
 ```bash
-# Quick install (auto-detects architecture)
-curl -sSL https://spdeploy.io/install.sh | sh
-
-# Or download manually
+# Option 1: Download via command line (replace with your platform)
 # Linux AMD64
 curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-amd64.tar.gz | tar -xz
+sudo mv spdeploy /usr/local/bin/
+
+# Linux ARM64
+curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-linux-arm64.tar.gz | tar -xz
 sudo mv spdeploy /usr/local/bin/
 
 # macOS (Intel)
@@ -51,11 +55,22 @@ sudo mv spdeploy /usr/local/bin/
 # macOS (Apple Silicon)
 curl -L https://github.com/simonjcarr/spdeploy/releases/latest/download/spdeploy-darwin-arm64.tar.gz | tar -xz
 sudo mv spdeploy /usr/local/bin/
+
+# Option 2: Manual download
+# 1. Go to https://github.com/simonjcarr/spdeploy/releases/latest
+# 2. Download the .tar.gz file for your platform
+# 3. Extract and install:
+tar -xzf spdeploy-*.tar.gz
+chmod +x spdeploy
+sudo mv spdeploy /usr/local/bin/
 ```
 
 ### Windows
 
-Download from [releases](https://github.com/simonjcarr/spdeploy/releases) and add to PATH.
+1. Visit the [releases page](https://github.com/simonjcarr/spdeploy/releases/latest)
+2. Download the Windows ZIP file for your architecture (amd64)
+3. Extract the ZIP file
+4. Add the directory to your PATH environment variable
 
 ## SSH Setup
 

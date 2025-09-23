@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v3.0.2] - 2025-09-23
+
 ### Added
 - CHANGELOG.md file for tracking version history and release notes
+- Automated changelog extraction in GitHub release workflow
+
+### Fixed
+- GitHub releases now properly display changelog content for each version
 
 ## [v3.0.1] - 2024-09-23
 
@@ -99,7 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSH key authentication
 - Configuration file support
 
-[Unreleased]: https://github.com/simonjcarr/spdeploy/compare/v3.0.1...HEAD
+[Unreleased]: https://github.com/simonjcarr/spdeploy/compare/v3.0.2...HEAD
+[v3.0.2]: https://github.com/simonjcarr/spdeploy/compare/v3.0.1...v3.0.2
 [v3.0.1]: https://github.com/simonjcarr/spdeploy/compare/v3.0.0...v3.0.1
 [v3.0.0]: https://github.com/simonjcarr/spdeploy/compare/v2.1.0...v3.0.0
 [v2.1.0]: https://github.com/simonjcarr/spdeploy/compare/v2.0.0...v2.1.0

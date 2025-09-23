@@ -37,6 +37,50 @@ jobs:
         VERSION: ${{ steps.get_version.outputs.VERSION }}
       run: ./build.sh package
 
+    - name: Extract changelog for this version
+      id: changelog
+      run: |
+        # Extract the changelog section for the current version
+        VERSION="${{ github.ref_name }}"
+        echo "Extracting changelog for version: $VERSION"
+
+        # Create a script to extract the changelog section
+        cat << 'EOF' > extract_changelog.sh
+        #!/bin/bash
+        VERSION="$1"
+        CHANGELOG_FILE="CHANGELOG.md"
+
+        # Find the section for this version and extract until the next version section or end of file
+        awk -v version="$VERSION" '
+          BEGIN { found = 0; output = "" }
+          /^## \[/ {
+            if (found) exit;
+            if ($0 ~ version) found = 1;
+          }
+          found && !/^## \[Unreleased\]/ && !/^\[.*\]:/ {
+            if (found == 1 && /^## \[/) next;  # Skip the version header itself
+            output = output $0 "\n"
+          }
+          END { print output }
+        ' "$CHANGELOG_FILE"
+        EOF
+
+        chmod +x extract_changelog.sh
+        CHANGELOG_CONTENT=$(./extract_changelog.sh "$VERSION")
+
+        # If no changelog found, use a default message
+        if [ -z "$CHANGELOG_CONTENT" ]; then
+          CHANGELOG_CONTENT="See [CHANGELOG.md](https://github.com/simonjcarr/spdeploy/blob/main/CHANGELOG.md) for details."
+        fi
+
+        # Write to file to preserve formatting
+        echo "$CHANGELOG_CONTENT" > changelog_body.txt
+
+        # Also save to GitHub output (escaped for multiline)
+        echo "content<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -49,6 +93,8 @@ jobs:
         prerelease: false
         body: |
           ## SPDeploy ${{ github.ref_name }}
+
+          ${{ steps.changelog.outputs.content }}
 
           ### Installation
 
