@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,8 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"spdeploy/internal/config"
 )
 
 // ShowContextualLogs shows logs based on the current directory and flags
@@ -64,8 +63,21 @@ func ShowContextualLogs(showGlobal bool, repoURL string, allRepos bool, username
 		}
 
 		// Check if this repo is monitored by the user
-		cfg := config.NewConfig()
-		repos, _ := cfg.ListRepositories()
+		// Load config directly to avoid circular dependency
+		configPath := filepath.Join(homeDir, ".config", "spdeploy", "config.json")
+		var cfg struct {
+			Repositories []struct {
+				URL    string `json:"url"`
+				Branch string `json:"branch"`
+				Path   string `json:"path"`
+			} `json:"repositories"`
+		}
+
+		data, err := os.ReadFile(configPath)
+		if err == nil {
+			json.Unmarshal(data, &cfg)
+		}
+		repos := cfg.Repositories
 		monitored := false
 		for _, repo := range repos {
 			if normalizeRepoURL(repo.URL) == normalizeRepoURL(repoInfo.URL) {
@@ -246,18 +258,50 @@ func displayLogFile(logFile string, follow bool) {
 
 // followLogFile tails a log file and displays new content as it arrives
 func followLogFile(file *os.File) {
-	// Seek to end of file
-	file.Seek(0, 2)
-
-	scanner := bufio.NewScanner(file)
-	for {
+	// First show the last 10 lines of existing content
+	// Get file size
+	stat, err := file.Stat()
+	if err == nil && stat.Size() > 0 {
+		// Read the whole file to show recent entries
+		file.Seek(0, 0)
+		scanner := bufio.NewScanner(file)
+		var lines []string
 		for scanner.Scan() {
-			fmt.Println(scanner.Text())
+			lines = append(lines, scanner.Text())
+		}
+		// Show last 10 lines
+		start := len(lines) - 10
+		if start < 0 {
+			start = 0
+		}
+		for i := start; i < len(lines); i++ {
+			fmt.Println(lines[i])
+		}
+	}
+
+	// Now follow new content
+	for {
+		// Get current position
+		currentPos, _ := file.Seek(0, 1)
+
+		// Check if file has grown
+		stat, err := file.Stat()
+		if err != nil {
+			fmt.Printf("Error getting file stats: %v\n", err)
+			return
 		}
 
-		if err := scanner.Err(); err != nil {
-			fmt.Printf("Error reading log file: %v\n", err)
-			return
+		if stat.Size() > currentPos {
+			// New content available
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				fmt.Println(scanner.Text())
+			}
+
+			if err := scanner.Err(); err != nil {
+				fmt.Printf("Error reading log file: %v\n", err)
+				return
+			}
 		}
 
 		// Wait a bit before checking for new content

@@ -185,7 +185,8 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		monitor := internal.NewMonitor(cfg)
+		// Use the improved monitor with repo-specific logging
+		monitor := internal.NewMonitorV2(cfg)
 
 		// Setup signal handlers
 		sigChan := make(chan os.Signal, 1)

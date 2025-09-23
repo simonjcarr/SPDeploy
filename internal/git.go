@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -63,6 +64,41 @@ func PullChanges(repo Repository) error {
 	   strings.Contains(outputStr, "Already up-to-date") {
 		// This shouldn't happen if HasChanges returned true, but handle it gracefully
 		return nil
+	}
+
+	return nil
+}
+
+// ValidateRepository checks if a repository can be accessed
+func ValidateRepository(repo Repository) error {
+	// Ensure the directory exists
+	if err := ensureDirectoryExists(repo.Path); err != nil {
+		return fmt.Errorf("failed to ensure directory exists: %w", err)
+	}
+
+	// Check if it's already a git repository
+	gitDir := filepath.Join(repo.Path, ".git")
+	if fileExists(gitDir) {
+		// Verify it's the correct repository
+		cmd := exec.Command("git", "remote", "get-url", "origin")
+		cmd.Dir = repo.Path
+		output, err := cmd.Output()
+		if err != nil {
+			return fmt.Errorf("failed to get remote URL: %w", err)
+		}
+
+		remoteURL := strings.TrimSpace(string(output))
+		if remoteURL != repo.URL {
+			return fmt.Errorf("directory already contains a different repository: %s", remoteURL)
+		}
+		return nil
+	}
+
+	// Try to clone the repository
+	cmd := exec.Command("git", "clone", "-b", repo.Branch, repo.URL, repo.Path)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to clone repository: %w\nOutput: %s", err, string(output))
 	}
 
 	return nil
