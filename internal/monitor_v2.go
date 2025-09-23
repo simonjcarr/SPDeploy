@@ -14,7 +14,6 @@ import (
 // MonitorV2 is an improved monitor that uses repo-specific logging
 type MonitorV2 struct {
 	config *Config
-	logger *Logger  // Keep simple logger for backward compatibility
 }
 
 func NewMonitorV2(config *Config) *MonitorV2 {
@@ -25,7 +24,6 @@ func NewMonitorV2(config *Config) *MonitorV2 {
 
 	return &MonitorV2{
 		config: config,
-		logger: NewLogger(),
 	}
 }
 
