@@ -12,9 +12,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"golang.org/x/term"
 	"spdeploy/internal/auth"
 	"spdeploy/internal/config"
 	"spdeploy/internal/daemon"
+	"spdeploy/internal/git"
 	"spdeploy/internal/logger"
 	"spdeploy/internal/monitor"
 )
@@ -112,16 +114,31 @@ var repoAddCmd = &cobra.Command{
 				fmt.Printf("   Run 'spdeploy repo auth %s' for setup instructions.\n", repo)
 			}
 		} else if isHTTPS && useToken {
-			// HTTPS URL with token flag
-			authenticator := auth.NewPATAuthenticator()
-			storedToken, err := authenticator.GetStoredToken()
+			// HTTPS URL with token flag - detect provider and get appropriate token
+			tokenStore := auth.NewTokenStore()
+			var provider string
+
+			// Detect provider from URL
+			if strings.Contains(repo, "github.com") {
+				provider = "github"
+			} else if strings.Contains(repo, "gitlab.com") {
+				provider = "gitlab"
+			} else if strings.Contains(repo, "bitbucket.org") {
+				provider = "bitbucket"
+			} else {
+				fmt.Printf("Could not detect provider for %s\n", repo)
+				fmt.Println("Please ensure you have authenticated with 'spdeploy repo auth'")
+				os.Exit(1)
+			}
+
+			storedToken, err := tokenStore.GetToken(provider)
 			if err != nil || storedToken == "" {
-				fmt.Println("No stored GitHub token found.")
-				fmt.Printf("Please run 'spdeploy repo auth %s' first to set up GitHub authentication.\n", repo)
+				fmt.Printf("No stored %s token found.\n", provider)
+				fmt.Printf("Please run 'spdeploy repo auth %s' first to set up authentication.\n", repo)
 				os.Exit(1)
 			}
 			token = storedToken
-			fmt.Println("✓ Using stored GitHub token for this repository")
+			fmt.Printf("✓ Using stored %s token for this repository\n", provider)
 		} else if isHTTPS && !useToken {
 			fmt.Println("ℹ️  HTTPS URL detected. For private repositories, you may want to:")
 			fmt.Printf("   1. Run 'spdeploy repo auth %s' to set up a PAT token\n", repo)
@@ -140,7 +157,15 @@ var repoAddCmd = &cobra.Command{
 			fmt.Println("   Authentication: SSH keys")
 			fmt.Println("   Note: Ensure SSH keys are available when the service runs")
 		} else if token != "" {
-			fmt.Println("   Authentication: GitHub Personal Access Token")
+			provider := "Git"
+			if strings.Contains(repo, "github.com") {
+				provider = "GitHub"
+			} else if strings.Contains(repo, "gitlab.com") {
+				provider = "GitLab"
+			} else if strings.Contains(repo, "bitbucket.org") {
+				provider = "Bitbucket"
+			}
+			fmt.Printf("   Authentication: %s Personal Access Token\n", provider)
 		} else {
 			fmt.Println("   Authentication: None (public repository only)")
 		}
@@ -279,16 +304,120 @@ func showSSHSetupInstructions(repoURL string) {
 	}
 }
 
+func openBrowser(url string) {
+	var cmd string
+	var args []string
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	case "darwin":
+		cmd = "open"
+	default: // "linux", "freebsd", "openbsd", "netbsd"
+		cmd = "xdg-open"
+	}
+	args = append(args, url)
+
+	if err := exec.Command(cmd, args...).Start(); err != nil {
+		// Silently ignore errors - browser might not be available
+	}
+}
+
+func handleGitLabAuth(gitManager *git.GitManagerWithProvider, logout bool) {
+	tokenStore := auth.NewTokenStore()
+
+	if logout {
+		if err := tokenStore.RemoveToken("gitlab"); err != nil {
+			fmt.Printf("Error clearing GitLab token: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("✅ GitLab authentication cleared")
+		return
+	}
+
+	// Check if token already exists
+	existingToken, err := tokenStore.GetToken("gitlab")
+	if err != nil {
+		fmt.Printf("Error checking existing token: %v\n", err)
+	} else if existingToken != "" {
+		fmt.Println("🔐 Validating existing GitLab token...")
+		if err := gitManager.ValidateToken("https://gitlab.com", existingToken); err == nil {
+			fmt.Println("✅ Valid GitLab token already configured")
+			fmt.Println("Use 'spdeploy repo auth --logout' to clear and re-authenticate")
+			return
+		}
+		fmt.Println("⚠️  Existing token is invalid, re-authenticating...")
+	}
+
+	// Show GitLab setup instructions
+	fmt.Println()
+	fmt.Println("🔐 GitLab Personal Access Token Setup")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println()
+	fmt.Println("To access private repositories, you need a GitLab Personal Access Token.")
+	fmt.Println()
+	fmt.Println("📋 Follow these steps:")
+	fmt.Println("1. Go to: https://gitlab.com/-/profile/personal_access_tokens")
+	fmt.Println("2. Give your token a descriptive name (e.g., 'spdeploy-deployment')")
+	fmt.Println("3. Select expiration (optional)")
+	fmt.Println("4. Select scopes:")
+	fmt.Println("   ✓ read_repository (Read access to repositories)")
+	fmt.Println("   ✓ write_repository (Write access to repositories - if needed)")
+	fmt.Println("5. Click 'Create personal access token'")
+	fmt.Println("6. Copy the generated token")
+	fmt.Println()
+	fmt.Println("🌐 Opening GitLab in your browser...")
+	fmt.Println()
+
+	// Open browser
+	openBrowser("https://gitlab.com/-/profile/personal_access_tokens")
+
+	// Prompt for token
+	fmt.Print("Enter your GitLab Personal Access Token: ")
+	tokenBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
+	fmt.Println()
+	if err != nil {
+		fmt.Printf("❌ Failed to read token: %v\n", err)
+		os.Exit(1)
+	}
+
+	token := strings.TrimSpace(string(tokenBytes))
+	if token == "" {
+		fmt.Println("❌ No token provided")
+		os.Exit(1)
+	}
+
+	// Validate token
+	fmt.Println()
+	fmt.Println("🔍 Validating token...")
+	if err := gitManager.ValidateToken("https://gitlab.com", token); err != nil {
+		fmt.Printf("❌ Invalid token: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Store token
+	if err := tokenStore.SetToken("gitlab", token); err != nil {
+		fmt.Printf("❌ Failed to store token: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ GitLab token validated and stored successfully!")
+	fmt.Println()
+	fmt.Println("You can now add private GitLab repositories with:")
+	fmt.Println("  spdeploy repo add --repo <gitlab-url> --with-token")
+}
+
 var repoAuthCmd = &cobra.Command{
 	Use:   "auth [url]",
 	Short: "Set up authentication for repositories",
-	Long:  `Set up authentication for GitHub repositories.
+	Long:  `Set up authentication for Git repositories (GitHub, GitLab, etc.).
 Provide a repository URL to get specific instructions for SSH or HTTPS authentication.`,
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		logout, _ := cmd.Flags().GetBool("logout")
 
-		// If a URL is provided, check if it's SSH or HTTPS
+		// If a URL is provided, detect provider and handle authentication
 		if len(args) > 0 {
 			repoURL := args[0]
 			if strings.HasPrefix(repoURL, "git@") || strings.Contains(repoURL, ":") && !strings.HasPrefix(repoURL, "http") {
@@ -296,10 +425,20 @@ Provide a repository URL to get specific instructions for SSH or HTTPS authentic
 				showSSHSetupInstructions(repoURL)
 				return
 			}
-			// HTTPS URL - continue with PAT token flow
+
+			// HTTPS URL - detect provider and handle authentication
 			fmt.Printf("You're using an HTTPS URL (%s).\n", repoURL)
 			fmt.Println("HTTPS URLs can authenticate using Personal Access Tokens (PAT).")
 			fmt.Println()
+
+			// Detect provider
+			gitManager := git.NewGitManagerWithProvider()
+			if strings.Contains(repoURL, "gitlab.com") {
+				// Handle GitLab authentication
+				handleGitLabAuth(gitManager, logout)
+				return
+			}
+			// Fall through to GitHub authentication
 		}
 
 		authenticator := auth.NewPATAuthenticator()

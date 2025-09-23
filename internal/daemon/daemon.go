@@ -107,10 +107,7 @@ func (d *Daemon) startDaemonProcess() error {
 	cmd.Stdin = nil
 
 	// Set the process attributes to run as the current user
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-		Pgid:    0,
-	}
+	cmd.SysProcAttr = getSysProcAttr()
 
 	// Set environment to match current user
 	cmd.Env = os.Environ()
