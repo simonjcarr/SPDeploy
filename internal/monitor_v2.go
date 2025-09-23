@@ -13,7 +13,8 @@ import (
 
 // MonitorV2 is an improved monitor that uses repo-specific logging
 type MonitorV2 struct {
-	config *Config
+	config    *Config
+	pullQueue *PullQueue
 }
 
 func NewMonitorV2(config *Config) *MonitorV2 {
@@ -22,9 +23,15 @@ func NewMonitorV2(config *Config) *MonitorV2 {
 		fmt.Printf("Warning: Failed to initialize advanced logger: %v\n", err)
 	}
 
-	return &MonitorV2{
-		config: config,
+	m := &MonitorV2{
+		config:    config,
+		pullQueue: NewPullQueue(),
 	}
+
+	// Start the pull queue processor in a goroutine
+	go m.processPullQueue()
+
+	return m
 }
 
 func (m *MonitorV2) Run() {
@@ -138,7 +145,7 @@ func (m *MonitorV2) checkRepository(repo Repository) {
 		return
 	}
 
-	// New commits available, pull them
+	// New commits available, queue the pull request
 	if repoLogger != nil {
 		repoLogger.Info("New commits detected", zap.String("count", commitCount))
 	}
@@ -146,34 +153,8 @@ func (m *MonitorV2) checkRepository(repo Repository) {
 		zap.String("repo", repo.URL),
 		zap.String("count", commitCount))
 
-	cmdPull := exec.Command("git", "pull", "origin", repo.Branch)
-	cmdPull.Dir = repo.Path
-	pullOutput, err := cmdPull.CombinedOutput()
-	if err != nil {
-		errMsg := "Failed to pull changes"
-		if repoLogger != nil {
-			repoLogger.Error(errMsg, zap.Error(err), zap.String("output", string(pullOutput)))
-		}
-		logger.Error(errMsg,
-			zap.String("repo", repo.URL),
-			zap.Error(err),
-			zap.String("output", string(pullOutput)))
-		return
-	}
-
-	// Log successful deployment
-	if repoLogger != nil {
-		repoLogger.Info("Successfully pulled changes",
-			zap.String("output", strings.TrimSpace(string(pullOutput))))
-	}
-	logger.Info("Successfully pulled changes",
-		zap.String("repo", repo.URL),
-		zap.String("output", strings.TrimSpace(string(pullOutput))))
-
-	// Execute post-pull script if configured
-	if repo.PostPullScript != "" {
-		m.executePostPullScript(repo, repoLogger)
-	}
+	// Add to queue instead of pulling directly
+	m.pullQueue.Add(repo, repoLogger)
 }
 
 func (m *MonitorV2) executePostPullScript(repo Repository, repoLogger *logger.RepoLogger) {
@@ -216,6 +197,70 @@ func (m *MonitorV2) executePostPullScript(repo Repository, repoLogger *logger.Re
 		zap.String("repo", repo.URL),
 		zap.String("script", repo.PostPullScript),
 		zap.String("output", strings.TrimSpace(string(output))))
+}
+
+// processPullQueue handles pull requests from the queue sequentially
+func (m *MonitorV2) processPullQueue() {
+	for {
+		pr, ok := m.pullQueue.GetNext()
+		if !ok {
+			// No items in queue, wait a bit
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		// Process the pull request
+		m.executePull(pr.Repo, pr.RepoLogger)
+
+		// Mark as not processing to allow next item
+		m.pullQueue.SetProcessing(false)
+	}
+}
+
+// executePull performs the actual git pull and runs post-pull scripts
+func (m *MonitorV2) executePull(repo Repository, repoLogger *logger.RepoLogger) {
+	if repoLogger != nil {
+		repoLogger.Info("Starting pull operation")
+	}
+	logger.Info("Starting pull operation",
+		zap.String("repo", repo.URL),
+		zap.String("branch", repo.Branch))
+
+	cmdPull := exec.Command("git", "pull", "origin", repo.Branch)
+	cmdPull.Dir = repo.Path
+	pullOutput, err := cmdPull.CombinedOutput()
+	if err != nil {
+		errMsg := "Failed to pull changes"
+		if repoLogger != nil {
+			repoLogger.Error(errMsg, zap.Error(err), zap.String("output", string(pullOutput)))
+		}
+		logger.Error(errMsg,
+			zap.String("repo", repo.URL),
+			zap.Error(err),
+			zap.String("output", string(pullOutput)))
+		return
+	}
+
+	// Log successful deployment
+	if repoLogger != nil {
+		repoLogger.Info("Successfully pulled changes",
+			zap.String("output", strings.TrimSpace(string(pullOutput))))
+	}
+	logger.Info("Successfully pulled changes",
+		zap.String("repo", repo.URL),
+		zap.String("output", strings.TrimSpace(string(pullOutput))))
+
+	// Execute post-pull script if configured
+	if repo.PostPullScript != "" {
+		m.executePostPullScript(repo, repoLogger)
+	}
+
+	if repoLogger != nil {
+		repoLogger.Info("Pull operation completed")
+	}
+	logger.Info("Pull operation completed",
+		zap.String("repo", repo.URL),
+		zap.Int("remaining_in_queue", m.pullQueue.Size()))
 }
 
 // fileExists is defined in git.go
