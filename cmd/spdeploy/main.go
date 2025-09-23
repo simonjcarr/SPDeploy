@@ -140,6 +140,13 @@ var runCmd = &cobra.Command{
 		daemon, _ := cmd.Flags().GetBool("daemon")
 
 		if daemon {
+			// Check if daemon is already running
+			if internal.IsDaemonRunning() {
+				fmt.Fprintf(os.Stderr, "Error: Daemon is already running\n")
+				fmt.Fprintf(os.Stderr, "Use 'spdeploy stop' to stop the current daemon\n")
+				os.Exit(1)
+			}
+
 			// Start in background using exec.Command
 			exe, err := os.Executable()
 			if err != nil {
@@ -157,9 +164,17 @@ var runCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
+			// Write PID file
+			if err := internal.WriteDaemonPID(bgCmd.Process.Pid); err != nil {
+				// Kill the process if we can't write the PID file
+				bgCmd.Process.Kill()
+				fmt.Fprintf(os.Stderr, "Error: Failed to write PID file: %v\n", err)
+				os.Exit(1)
+			}
+
 			fmt.Printf("✓ Started SPDeploy daemon (PID: %d)\n", bgCmd.Process.Pid)
 			fmt.Printf("  Check logs at: ~/.spdeploy/logs/spdeploy.log\n")
-			fmt.Printf("  To stop: kill %d\n", bgCmd.Process.Pid)
+			fmt.Printf("  To stop: spdeploy stop\n")
 			os.Exit(0)
 		}
 
@@ -179,6 +194,8 @@ var runCmd = &cobra.Command{
 		go func() {
 			<-sigChan
 			fmt.Println("\n✓ Shutting down...")
+			// Clean up PID file if running as foreground daemon
+			internal.CleanupDaemonPID()
 			os.Exit(0)
 		}()
 
@@ -193,10 +210,17 @@ var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stop the monitoring daemon",
 	Run: func(cmd *cobra.Command, args []string) {
-		// For now, users need to manually kill the process
-		fmt.Println("To stop SPDeploy, find and kill the process:")
-		fmt.Println("  ps aux | grep spdeploy")
-		fmt.Println("  kill <pid>")
+		if !internal.IsDaemonRunning() {
+			fmt.Fprintf(os.Stderr, "Error: Daemon is not running\n")
+			os.Exit(1)
+		}
+
+		if err := internal.StopDaemon(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: Failed to stop daemon: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Println("✓ Daemon stopped successfully")
 	},
 }
 
