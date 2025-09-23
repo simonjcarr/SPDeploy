@@ -6,14 +6,22 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"spdeploy/internal/logger"
+	"go.uber.org/zap"
 )
 
 type Monitor struct {
 	config *Config
-	logger *Logger
+	logger *Logger  // Keep simple logger for backward compatibility
 }
 
 func NewMonitor(config *Config) *Monitor {
+	// Initialize the advanced logger system
+	if err := logger.InitLogger(); err != nil {
+		fmt.Printf("Warning: Failed to initialize advanced logger: %v\n", err)
+	}
+
 	return &Monitor{
 		config: config,
 		logger: NewLogger(),
@@ -32,27 +40,35 @@ func (m *Monitor) Run() {
 func (m *Monitor) checkRepository(repo Repository) {
 	m.logger.Info("Checking repository: %s", repo.URL)
 
+	// Also log to the advanced logger
+	logger.Info("Checking repository", zap.String("repo", repo.URL), zap.String("branch", repo.Branch))
+
 	// Check if there are changes
 	hasChanges, err := HasChanges(repo)
 	if err != nil {
 		m.logger.Error("Failed to check %s: %v", repo.URL, err)
+		logger.Error("Failed to check repository", zap.String("repo", repo.URL), zap.Error(err))
 		return
 	}
 
 	if !hasChanges {
 		m.logger.Debug("No changes in %s", repo.URL)
+		logger.Debug("No changes in repository", zap.String("repo", repo.URL))
 		return
 	}
 
 	m.logger.Info("Changes detected in %s, pulling...", repo.URL)
+	logger.Info("Changes detected, pulling", zap.String("repo", repo.URL), zap.String("branch", repo.Branch))
 
 	// Pull changes
 	if err := PullChanges(repo); err != nil {
 		m.logger.Error("Failed to pull %s: %v", repo.URL, err)
+		logger.Error("Failed to pull changes", zap.String("repo", repo.URL), zap.Error(err))
 		return
 	}
 
 	m.logger.Info("Successfully pulled changes for %s", repo.URL)
+	logger.Info("Successfully pulled changes", zap.String("repo", repo.URL))
 
 	// Run post-pull script if configured
 	if repo.PostPullScript != "" {
@@ -63,6 +79,7 @@ func (m *Monitor) checkRepository(repo Repository) {
 func (m *Monitor) runPostPullScript(repo Repository) {
 	scriptPath := filepath.Join(repo.Path, repo.PostPullScript)
 	m.logger.Info("Running post-pull script: %s", scriptPath)
+	logger.Info("Running post-pull script", zap.String("repo", repo.URL), zap.String("script", scriptPath))
 
 	cmd := exec.Command("/bin/sh", "-c", scriptPath)
 	cmd.Dir = repo.Path
@@ -71,12 +88,18 @@ func (m *Monitor) runPostPullScript(repo Repository) {
 	if err != nil {
 		m.logger.Error("Post-pull script failed for %s: %v\nOutput: %s",
 			repo.URL, err, string(output))
+		logger.Error("Post-pull script failed",
+			zap.String("repo", repo.URL),
+			zap.Error(err),
+			zap.String("output", string(output)))
 		return
 	}
 
 	m.logger.Info("Post-pull script completed successfully for %s", repo.URL)
+	logger.Info("Post-pull script completed", zap.String("repo", repo.URL))
 	if len(output) > 0 {
 		m.logger.Debug("Script output: %s", string(output))
+		logger.Debug("Script output", zap.String("repo", repo.URL), zap.String("output", string(output)))
 	}
 }
 

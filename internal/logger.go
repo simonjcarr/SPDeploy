@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"spdeploy/internal/logger"
 )
 
 type Logger struct {
@@ -73,4 +75,16 @@ func (l *Logger) Close() {
 	if l.file != nil {
 		l.file.Close()
 	}
+}
+
+// Wrapper functions for the advanced logger package
+
+// InitLogger initializes the global logger
+func InitLogger() error {
+	return logger.InitLogger()
+}
+
+// ShowContextualLogs shows logs based on the current directory and flags
+func ShowContextualLogs(showGlobal bool, repoURL string, allRepos bool, username string, follow bool) {
+	logger.ShowContextualLogs(showGlobal, repoURL, allRepos, username, follow)
 }

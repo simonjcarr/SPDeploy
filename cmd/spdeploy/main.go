@@ -200,17 +200,47 @@ var stopCmd = &cobra.Command{
 	},
 }
 
+var logCmd = &cobra.Command{
+	Use:   "log",
+	Short: "View deployment logs",
+	Long: `View SPDeploy logs for daemon operations and repository deployments.
+By default, shows logs for the current repository if in a git directory.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		follow, _ := cmd.Flags().GetBool("follow")
+		showGlobal, _ := cmd.Flags().GetBool("global")
+		repoURL, _ := cmd.Flags().GetString("repo")
+		allRepos, _ := cmd.Flags().GetBool("all")
+		username, _ := cmd.Flags().GetString("user")
+
+		// Initialize logger if not already done
+		if err := internal.InitLogger(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error initializing logger: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Show logs based on context
+		internal.ShowContextualLogs(showGlobal, repoURL, allRepos, username, follow)
+	},
+}
+
 func init() {
 	addCmd.Flags().String("branch", "main", "Branch to monitor")
 	addCmd.Flags().String("script", "", "Post-pull script to execute")
 
 	runCmd.Flags().BoolP("daemon", "d", false, "Run in background")
 
+	logCmd.Flags().BoolP("follow", "f", false, "Follow log output")
+	logCmd.Flags().BoolP("global", "g", false, "Show global daemon logs")
+	logCmd.Flags().StringP("repo", "r", "", "Show logs for specific repository URL")
+	logCmd.Flags().BoolP("all", "a", false, "List all monitored repositories")
+	logCmd.Flags().StringP("user", "u", "", "View logs for a specific user (root only)")
+
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(removeCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(stopCmd)
+	rootCmd.AddCommand(logCmd)
 }
 
 func main() {
