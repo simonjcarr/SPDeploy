@@ -25,12 +25,13 @@ type RepoLogger struct {
 func sanitizeRepoURL(repoURL string) string {
 	cleaned := repoURL
 
-	// Remove any embedded tokens (format: https://token@github.com/...)
+	// Remove any embedded tokens
 	if strings.Contains(cleaned, "@") && strings.HasPrefix(cleaned, "http") {
-		parts := strings.SplitN(cleaned, "@", 2)
-		if len(parts) == 2 {
-			// Take only the part after the @
-			cleaned = parts[1]
+		// Find the last @ before the domain (to handle oauth2:token@domain format)
+		idx := strings.LastIndex(cleaned, "@")
+		if idx > 0 {
+			// Take only the part after the last @
+			cleaned = cleaned[idx+1:]
 		}
 	} else {
 		// Remove protocol prefixes

@@ -27,14 +27,20 @@ func ConvertSSHToHTTPS(sshURL string, token string) string {
 
 // StripTokenFromURL removes the token from an HTTPS URL for logging
 func StripTokenFromURL(url string) string {
-	if !strings.Contains(url, "@github.com") {
-		return url
-	}
-
-	// Find the position of @ and remove everything between https:// and @
-	parts := strings.SplitN(url, "@github.com/", 2)
-	if len(parts) == 2 {
-		return "https://github.com/" + parts[1]
+	// Handle URLs with embedded tokens (GitHub, GitLab, etc.)
+	if strings.Contains(url, "@") && strings.HasPrefix(url, "http") {
+		// Find the last @ before the domain (to handle oauth2:token@domain format)
+		idx := strings.LastIndex(url, "@")
+		if idx > 0 {
+			// Extract protocol
+			protocol := "https://"
+			if strings.HasPrefix(url, "http://") {
+				protocol = "http://"
+			}
+			// Remove everything between protocol and @ (including the @)
+			afterAt := url[idx+1:]
+			return protocol + afterAt
+		}
 	}
 
 	return url

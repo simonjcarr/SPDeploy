@@ -36,6 +36,11 @@ func (d *Daemon) Start() error {
 		return fmt.Errorf("daemon is already running")
 	}
 
+	// Prevent running as root on Unix systems
+	if os.Geteuid() == 0 {
+		return fmt.Errorf("daemon should not be started as root - please run as a normal user")
+	}
+
 	// Start the daemon process
 	return d.startDaemonProcess()
 }
@@ -100,6 +105,15 @@ func (d *Daemon) startDaemonProcess() error {
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	cmd.Stdin = nil
+
+	// Set the process attributes to run as the current user
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+		Pgid:    0,
+	}
+
+	// Set environment to match current user
+	cmd.Env = os.Environ()
 
 	// Start the process
 	err = cmd.Start()

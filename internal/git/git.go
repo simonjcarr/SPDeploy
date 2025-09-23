@@ -138,7 +138,7 @@ func (gm *GitManager) cloneRepository(repoURL, branch, localPath string) error {
 		zap.String("path", localPath),
 	)
 
-	_, err := git.PlainClone(localPath, false, &git.CloneOptions{
+	repo, err := git.PlainClone(localPath, false, &git.CloneOptions{
 		URL:           cloneURL,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
@@ -149,10 +149,25 @@ func (gm *GitManager) cloneRepository(repoURL, branch, localPath string) error {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}
 
-	// If we used authentication, ensure the remote URL includes it
-	if gm.githubToken != "" && strings.Contains(cloneURL, gm.githubToken) {
-		// The remote URL is already set with authentication from the clone
-		// No need to update it
+	// If we used authentication, update the remote URL to remove the token
+	// This ensures the stored remote URL doesn't contain sensitive tokens
+	// and allows the log viewer to match the repository correctly
+	if cloneURL != repoURL {
+		// Set the remote URL back to the original (without token)
+		remote, err := repo.Remote("origin")
+		if err == nil {
+			config := remote.Config()
+			config.URLs = []string{repoURL}
+			err = repo.DeleteRemote("origin")
+			if err == nil {
+				_, err = repo.CreateRemote(config)
+				if err != nil {
+					logger.Warn("Failed to update remote URL to remove token",
+						zap.String("repo", repoURL),
+						zap.Error(err))
+				}
+			}
+		}
 	}
 
 	logger.Info("Repository cloned successfully",
@@ -243,9 +258,31 @@ func (gm *GitManager) HasChanges(repoURL, branch, localPath string) (bool, error
 func (gm *GitManager) compareGitURLs(url1, url2 string) bool {
 	// Normalize URLs for comparison
 	normalize := func(url string) string {
+		// Remove any embedded tokens first
+		if strings.Contains(url, "@") && strings.HasPrefix(url, "http") {
+			// Find the last @ before the domain (to handle oauth2:token@domain format)
+			idx := strings.LastIndex(url, "@")
+			if idx > 0 {
+				// Extract protocol
+				protocol := "https://"
+				if strings.HasPrefix(url, "http://") {
+					protocol = "http://"
+				}
+				// Remove everything between protocol and @ (including the @)
+				afterAt := url[idx+1:]
+				url = protocol + afterAt
+			}
+		}
+
 		// Convert SSH to HTTPS format for comparison
 		if strings.HasPrefix(url, "git@github.com:") {
 			url = "https://github.com/" + strings.TrimPrefix(url, "git@github.com:")
+		} else if strings.HasPrefix(url, "git@gitlab.com:") {
+			url = "https://gitlab.com/" + strings.TrimPrefix(url, "git@gitlab.com:")
+		} else if strings.Contains(url, "git@") && strings.Contains(url, ":") {
+			// Handle generic git@host:path format
+			url = strings.TrimPrefix(url, "git@")
+			url = "https://" + strings.Replace(url, ":", "/", 1)
 		}
 
 		// Remove .git suffix
@@ -253,7 +290,7 @@ func (gm *GitManager) compareGitURLs(url1, url2 string) bool {
 
 		// Ensure it starts with https://
 		if !strings.HasPrefix(url, "https://") && !strings.HasPrefix(url, "http://") {
-			if strings.HasPrefix(url, "github.com/") {
+			if strings.HasPrefix(url, "github.com/") || strings.HasPrefix(url, "gitlab.com/") {
 				url = "https://" + url
 			}
 		}

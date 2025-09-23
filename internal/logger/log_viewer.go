@@ -157,22 +157,31 @@ func detectCurrentRepo() (*RepoInfo, error) {
 func normalizeRepoURL(url string) string {
 	normalized := url
 
-	// Remove any embedded tokens (format: https://token@github.com/...)
+	// Remove any embedded tokens
 	if strings.Contains(normalized, "@") && strings.HasPrefix(normalized, "http") {
-		parts := strings.SplitN(normalized, "@", 2)
-		if len(parts) == 2 {
-			// Reconstruct without token
+		// Find the last @ before the domain (to handle oauth2:token@domain format)
+		idx := strings.LastIndex(normalized, "@")
+		if idx > 0 {
+			// Extract protocol
 			protocol := "https://"
 			if strings.HasPrefix(normalized, "http://") {
 				protocol = "http://"
 			}
-			normalized = protocol + parts[1]
+			// Remove everything between protocol and @ (including the @)
+			afterAt := normalized[idx+1:]
+			normalized = protocol + afterAt
 		}
 	}
 
 	// Convert SSH to HTTPS format for comparison
 	if strings.HasPrefix(normalized, "git@github.com:") {
 		normalized = "https://github.com/" + strings.TrimPrefix(normalized, "git@github.com:")
+	} else if strings.HasPrefix(normalized, "git@gitlab.com:") {
+		normalized = "https://gitlab.com/" + strings.TrimPrefix(normalized, "git@gitlab.com:")
+	} else if strings.Contains(normalized, "git@") && strings.Contains(normalized, ":") {
+		// Handle generic git@host:path format
+		normalized = strings.TrimPrefix(normalized, "git@")
+		normalized = "https://" + strings.Replace(normalized, ":", "/", 1)
 	}
 
 	// Remove .git suffix

@@ -715,19 +715,33 @@ func uninstallSPDeploy() error {
 		}
 	}
 
-	// Optionally remove user config (ask user)
-	cfg := config.NewConfig()
-	configDir := filepath.Dir(cfg.GetConfigPath())
-	if _, err := os.Stat(configDir); err == nil {
+	// Optionally remove user config and data (ask user)
+	homeDir, _ := os.UserHomeDir()
+	dirsToRemove := []string{
+		filepath.Join(homeDir, ".config", "spdeploy"),
+		filepath.Join(homeDir, ".spdeploy"),
+		filepath.Join(homeDir, ".local", "share", "spdeploy"),
+	}
+
+	// Check if any directories exist
+	var existingDirs []string
+	for _, dir := range dirsToRemove {
+		if _, err := os.Stat(dir); err == nil {
+			existingDirs = append(existingDirs, dir)
+		}
+	}
+
+	if len(existingDirs) > 0 {
 		fmt.Print("🗂️  Remove configuration and logs? (y/N): ")
 		var response string
 		fmt.Scanln(&response)
 		if response == "y" || response == "Y" {
-			if err := os.RemoveAll(configDir); err != nil {
-				fmt.Printf("⚠️  Warning: Could not remove config directory: %v\n", err)
-			} else {
-				fmt.Println("🗑️  Configuration and logs removed")
+			for _, dir := range existingDirs {
+				if err := os.RemoveAll(dir); err != nil {
+					fmt.Printf("⚠️  Warning: Could not remove %s: %v\n", dir, err)
+				}
 			}
+			fmt.Println("🗑️  Configuration and logs removed")
 		}
 	}
 
@@ -767,6 +781,17 @@ func runAsService() {
 	if err := logger.InitLogger(); err != nil {
 		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Log the user context
+	if os.Geteuid() == 0 {
+		logger.Warn("Service is running as root - this is not recommended!")
+		logger.Info("User ID", zap.Int("uid", os.Getuid()), zap.Int("euid", os.Geteuid()))
+	} else {
+		logger.Info("Service running as user",
+			zap.String("user", os.Getenv("USER")),
+			zap.Int("uid", os.Getuid()),
+			zap.Int("euid", os.Geteuid()))
 	}
 
 	logger.Info("Starting SPDeploy service")
@@ -1191,19 +1216,47 @@ func createWindowsService(binaryPath string) error {
 func removeSystemService() error {
 	switch runtime.GOOS {
 	case "linux":
-		// Stop and disable systemd service
+		// Stop and disable user systemd service
+		homeDir := os.Getenv("HOME")
+		if homeDir == "" {
+			homeDir, _ = os.UserHomeDir()
+		}
+		// Try user service first
+		exec.Command("systemctl", "--user", "stop", "spdeploy.service").Run()
+		exec.Command("systemctl", "--user", "disable", "spdeploy.service").Run()
+		serviceFile := filepath.Join(homeDir, ".config", "systemd", "user", "spdeploy.service")
+		os.Remove(serviceFile)
+		// Also try system service for backwards compatibility
 		exec.Command("sudo", "systemctl", "stop", "spdeploy.service").Run()
 		exec.Command("sudo", "systemctl", "disable", "spdeploy.service").Run()
-		return exec.Command("sudo", "rm", "-f", "/etc/systemd/system/spdeploy.service").Run()
+		exec.Command("sudo", "rm", "-f", "/etc/systemd/system/spdeploy.service").Run()
+		return nil
 	case "darwin":
 		// Unload and remove launchd service
 		homeDir, _ := os.UserHomeDir()
-		plistFile := filepath.Join(homeDir, "Library", "LaunchAgents", "com.spdeploy.service.plist")
-		exec.Command("launchctl", "unload", plistFile).Run()
-		return os.Remove(plistFile)
+		// Try both possible plist file names
+		plistFiles := []string{
+			filepath.Join(homeDir, "Library", "LaunchAgents", "com.spdeploy.user.plist"),
+			filepath.Join(homeDir, "Library", "LaunchAgents", "com.spdeploy.service.plist"),
+		}
+		var lastErr error
+		for _, plistFile := range plistFiles {
+			if _, err := os.Stat(plistFile); err == nil {
+				// Unload if it exists
+				exec.Command("launchctl", "unload", plistFile).Run()
+				if err := os.Remove(plistFile); err != nil {
+					lastErr = err
+				}
+			}
+		}
+		return lastErr
 	case "windows":
-		// Remove Windows service
-		return exec.Command("sc.exe", "delete", "SPDeploy").Run()
+		// Remove Windows scheduled task
+		taskName := "SPDeploy_User_Service"
+		exec.Command("schtasks", "/delete", "/tn", taskName, "/f").Run()
+		// Also try old service name for backwards compatibility
+		exec.Command("sc.exe", "delete", "SPDeploy").Run()
+		return nil
 	default:
 		return fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}
