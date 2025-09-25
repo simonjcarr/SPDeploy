@@ -111,6 +111,7 @@ spdeploy add git@bitbucket.org:company/app.git ~/app --script deploy.sh
 spdeploy run         # Start in foreground
 spdeploy run -d      # Start as daemon (background)
 spdeploy stop        # Stop daemon
+spdeploy status      # Check if daemon is running
 
 # View repositories
 spdeploy list
