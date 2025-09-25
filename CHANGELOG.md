@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v3.0.4] - 2025-09-25
+
+### Fixed
+- Fixed post-pull script functionality by properly handling the --script flag in the add command
+- Script parameter is now correctly passed to repository configuration
+
+### Changed
+- Updated README.md with clearer documentation
+
 ## [v3.0.3] - 2025-09-23
 
 ### Changed
@@ -114,7 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSH key authentication
 - Configuration file support
 
-[Unreleased]: https://github.com/simonjcarr/spdeploy/compare/v3.0.3...HEAD
+[Unreleased]: https://github.com/simonjcarr/spdeploy/compare/v3.0.4...HEAD
+[v3.0.4]: https://github.com/simonjcarr/spdeploy/compare/v3.0.3...v3.0.4
 [v3.0.3]: https://github.com/simonjcarr/spdeploy/compare/v3.0.2...v3.0.3
 [v3.0.2]: https://github.com/simonjcarr/spdeploy/compare/v3.0.1...v3.0.2
 [v3.0.1]: https://github.com/simonjcarr/spdeploy/compare/v3.0.0...v3.0.1
