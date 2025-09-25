@@ -58,6 +58,10 @@ func readDaemonPID() (int, error) {
 	return pid, nil
 }
 
+func ReadDaemonPID() (int, error) {
+	return readDaemonPID()
+}
+
 func StopDaemon() error {
 	pid, err := readDaemonPID()
 	if err != nil {

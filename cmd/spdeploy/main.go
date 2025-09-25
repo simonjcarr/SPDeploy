@@ -227,6 +227,26 @@ var stopCmd = &cobra.Command{
 	},
 }
 
+var statusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Check if the SPDeploy daemon is running",
+	Run: func(cmd *cobra.Command, args []string) {
+		if internal.IsDaemonRunning() {
+			pid, err := internal.ReadDaemonPID()
+			if err != nil {
+				fmt.Println("✓ SPDeploy daemon is running")
+			} else {
+				fmt.Printf("✓ SPDeploy daemon is running (PID: %d)\n", pid)
+			}
+			fmt.Println("  Check logs at: ~/.spdeploy/logs/spdeploy.log")
+			fmt.Println("  To stop: spdeploy stop")
+		} else {
+			fmt.Println("✗ SPDeploy daemon is not running")
+			fmt.Println("  To start: spdeploy run -d")
+		}
+	},
+}
+
 var logCmd = &cobra.Command{
 	Use:   "log",
 	Short: "View deployment logs",
@@ -267,6 +287,7 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(stopCmd)
+	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(logCmd)
 }
 
