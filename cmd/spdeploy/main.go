@@ -34,6 +34,7 @@ var addCmd = &cobra.Command{
 		sshURL := args[0]
 		localPath := args[1]
 		branch, _ := cmd.Flags().GetString("branch")
+		script, _ := cmd.Flags().GetString("script")
 
 		// Validate SSH URL
 		if !strings.HasPrefix(sshURL, "git@") {
@@ -53,9 +54,10 @@ var addCmd = &cobra.Command{
 
 		// Add repository
 		repo := internal.Repository{
-			URL:    sshURL,
-			Branch: branch,
-			Path:   localPath,
+			URL:            sshURL,
+			Branch:         branch,
+			Path:           localPath,
+			PostPullScript: script,
 		}
 
 		// Validate repository can be accessed

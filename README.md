@@ -125,11 +125,14 @@ spdeploy log -f      # Follow logs (real-time)
 
 ### Deploy Scripts
 
-Create `spdeploy.sh` in your repository root to run commands after each pull:
+Create a deploy script in your repository that runs automatically after each pull. By default, SPDeploy looks for `spdeploy.sh` in your repository root, but you can specify a custom script path using the `--script` flag.
+
+**Important:** The script is executed from the repository's root directory, not from the directory where the script is located. All relative paths in your script will be relative to the repository root.
 
 ```bash
 #!/bin/bash
 # spdeploy.sh - Runs automatically after pulling changes
+# Working directory: repository root
 
 # Node.js example
 npm ci --production
@@ -143,6 +146,20 @@ systemctl restart myapp
 # Docker example
 docker-compose down
 docker-compose up -d --build
+```
+
+If your script is in a subdirectory and needs to reference files relative to its location:
+
+```bash
+#!/bin/bash
+# scripts/deploy.sh - Script in subdirectory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Files created here will be in the repository root
+echo "Deployed at $(date)" > deploy.log
+
+# To create files in the script's directory
+echo "Deployed at $(date)" > "$SCRIPT_DIR/deploy.log"
 ```
 
 Make it executable:
